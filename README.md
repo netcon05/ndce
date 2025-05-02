@@ -5,7 +5,7 @@ This application is used to make changes to network device configuration remotel
 
 The information about network devices is gathered using **SNMP** protocol.
 
-The script does its job asynchronously.
+The application does its job asynchronously.
 
 **On linux systems in order to make icmp pings use the hack below.**
 
