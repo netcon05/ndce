@@ -1,9 +1,9 @@
 # NDCE
 ### Network Device Configuration Editor
 
-This application is used to make changes to network device configuration remotely using telnet or ssh protocols.
+This application is used to make changes to network device configuration remotely using **TELNET** or **SSH** protocols.
 
-The information about network devices is gathered using snmp protocol.
+The information about network devices is gathered using **SNMP** protocol.
 
 The script does its job asynchronously.
 
