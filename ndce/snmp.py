@@ -3,11 +3,12 @@ from typing import Optional
 from ndce.net import is_ip_address
 
 
-SNMP_SYS_NAME = '1.3.6.1.2.1.1.5.0'
-SNMP_SYS_DESCR = '1.3.6.1.2.1.1.1.0'
-SNMP_COMMUNITY = 'iMAXPublic'
+SNMP_COMMUNITY = 'public'
 SNMP_PORT = 161
 SNMP_TIMEOUT = 1
+SNMP_SYS_NAME = '1.3.6.1.2.1.1.5.0'
+SNMP_SYS_DESCR = '1.3.6.1.2.1.1.1.0'
+SNMP_SYS_OBJECT_ID = '1.3.6.1.2.1.1.2.0'
 
 
 async def get_snmp_value(
