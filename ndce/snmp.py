@@ -1,6 +1,8 @@
 import aiosnmp
 from typing import Optional
 from ndce.net import is_ip_address
+from ndce.sysobjectids import sysobjectids
+from ndce.helpers import NestedNamespace
 
 
 SNMP_COMMUNITY = 'public'
@@ -50,13 +52,33 @@ async def get_system_description(host: str) -> str:
     return result
 
 
-def get_vendor_name():
-    pass
+async def get_system_object_id(host: str) -> str:
+    result = await get_snmp_value(SNMP_SYS_OBJECT_ID, host)
+    return result
 
 
-def get_model_name():
-    pass
+async def get_device_info(host: str) -> str:
+    result = await get_system_object_id(host)
+    if result in sysobjectids.keys():
+        return sysobjectids[result]
+    else:
+        return NestedNamespace({
+            "vendor": "Unknown",
+            "model": "Unknown",
+            "category": "Unknown"
+        })
 
 
-def get_device_category():
-    pass
+async def get_vendor_name(host: str) -> str:
+    result = await get_device_info(host)
+    return result.vendor
+
+
+async def get_model_name(host: str) -> str:
+    result = await get_device_info(host)
+    return result.model
+
+
+async def get_device_category(host: str) -> str:
+    result = await get_device_info(host)
+    return result.category
