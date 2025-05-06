@@ -6,7 +6,7 @@ from ndce.net import is_ip_address
 from ndce.helpers import NestedNamespace
 
 
-SNMP_COMMUNITY = 'iMAXPublic'
+SNMP_COMMUNITY = 'public'
 SNMP_PORT = 161
 SNMP_TIMEOUT = 1
 SNMP_SYS_NAME = '1.3.6.1.2.1.1.5.0'
