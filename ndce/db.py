@@ -1,4 +1,3 @@
-from typing import Dict
 import sqlite3
 
 
@@ -8,7 +7,7 @@ DB_NAME = 'ndce.db'
 class UseDatabase:
 
     def __init__(
-        self, db_name: Dict = DB_NAME, db_commit: bool = False
+        self, db_name: str = DB_NAME, db_commit: bool = False
     ) -> None:
         self.db_name = db_name
         self.db_commit = db_commit

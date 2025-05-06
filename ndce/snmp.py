@@ -1,16 +1,20 @@
 import aiosnmp
 from typing import Optional
+import json
 from ndce.net import is_ip_address
-from ndce.sysobjectids import sysobjectids
 from ndce.helpers import NestedNamespace
 
 
 SNMP_COMMUNITY = 'public'
 SNMP_PORT = 161
 SNMP_TIMEOUT = 1
-SNMP_SYS_NAME = '1.3.6.1.2.1.1.5.0'
-SNMP_SYS_DESCR = '1.3.6.1.2.1.1.1.0'
-SNMP_SYS_OBJECT_ID = '1.3.6.1.2.1.1.2.0'
+SNMP_SYS_NAME = '.1.3.6.1.2.1.1.5.0'
+SNMP_SYS_DESCR = '.1.3.6.1.2.1.1.1.0'
+SNMP_SYS_OBJECT_ID = '.1.3.6.1.2.1.1.2.0'
+
+MKT_SYS_OBJECT_IDS = ['.1.3.6.1.4.1.14988.1', '.1.3.6.1.4.1.14988.2']
+
+SYS_OBJECT_IDS_DB = 'ids.json'
 
 
 async def get_snmp_value(
@@ -59,13 +63,32 @@ async def get_system_object_id(host: str) -> str:
 
 async def get_device_info(host: str) -> str:
     result = await get_system_object_id(host)
-    if result in sysobjectids.keys():
-        return sysobjectids[result]
+    if result in MKT_SYS_OBJECT_IDS:
+        if result == MKT_SYS_OBJECT_IDS[0]:
+            # MikroTik routers snmp system description
+            # is in 'RouterOS RB750GL' format.
+            # We have to get rid of beginning RouterOS word.
+            model = ''.join(get_system_description(host).split(' ')[1::])
+            category = 'Router'
+        elif result == MKT_SYS_OBJECT_IDS[1]:
+            # MikroTik switches snmp system description
+            # is in 'RB260GS' format. We leave it as is.
+            model = get_system_description(host)
+            category = 'Switch'
+        return NestedNamespace({
+            'vendor': 'MikroTik',
+            'model': model,
+            'category': category
+        })
+    with open(SYS_OBJECT_IDS_DB) as file:
+        sys_object_ids = json.loads(file)
+    if result in sys_object_ids.keys():
+        return NestedNamespace(sys_object_ids[result])
     else:
         return NestedNamespace({
-            "vendor": "Unknown",
-            "model": "Unknown",
-            "category": "Unknown"
+            'vendor': 'Unknown',
+            'model': 'Unknown',
+            'category': 'Unknown'
         })
 
 

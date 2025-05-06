@@ -1,0 +1,272 @@
+{
+    ".1.3.6.1.4.1.259.6.10.94": {
+        "vendor": "Accton",
+        "model": "EdgeCore ES3528M",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.259.10.1.22.101": {
+        "vendor": "Accton",
+        "model": "EdgeCore ES3528MV2",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.259.10.1.27.101": {
+        "vendor": "Accton",
+        "model": "EdgeCore ECS3510-28T",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.259.10.1.27.102": {
+        "vendor": "Accton",
+        "model": "EdgeCore ECS3510-52T",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.259.6.10.74": {
+        "vendor": "Accton",
+        "model": "EdgeCore ES3526XA",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.259.8.1.5": {
+        "vendor": "Accton",
+        "model": "EdgeCore ES3526XA-V2",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.259.6.10.57": {
+        "vendor": "Accton",
+        "model": "EdgeCore ES4612",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.1": {
+        "vendor": "SNR",
+        "model": "S2940-8G",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.2": {
+        "vendor": "SNR",
+        "model": "S2940-8G-v2",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.6339.1.1.1.36": {
+        "vendor": "SNR",
+        "model": "S2950-24G",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.5": {
+        "vendor": "SNR",
+        "model": "S2960-24G",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.6": {
+        "vendor": "SNR",
+        "model": "S2960-48G",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.42": {
+        "vendor": "SNR",
+        "model": "S2985G-24TC",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.371": {
+        "vendor": "SNR",
+        "model": "S2965-24T",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.57206.1.2": {
+        "vendor": "SNR",
+        "model": "S5210G-24TX-UPS",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.234": {
+        "vendor": "SNR",
+        "model": "S2990G-24FX",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.43": {
+        "vendor": "SNR",
+        "model": "S2995G-24FX",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.75.14.1": {
+        "vendor": "D-Link",
+        "model": "DES-1210-10/ME",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.75.15.2": {
+        "vendor": "D-Link",
+        "model": "DES-1210-28/ME",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.75.26.1": {
+        "vendor": "D-Link",
+        "model": "DES-1210-52/ME",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.116.2": {
+        "vendor": "D-Link",
+        "model": "DES-1228/ME",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.63.6": {
+        "vendor": "D-Link",
+        "model": "DES-3028",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.63.8": {
+        "vendor": "D-Link",
+        "model": "DES-3052",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.113.1.5": {
+        "vendor": "D-Link",
+        "model": "DES-3200-26",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.64.1": {
+        "vendor": "D-Link",
+        "model": "DES-3526",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.64.2": {
+        "vendor": "D-Link",
+        "model": "DES-3550",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.94.5": {
+        "vendor": "D-Link",
+        "model": "DGS-3100-24TG",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.59.7": {
+        "vendor": "D-Link",
+        "model": "DXS-3326GSR",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.6486.800.1.1.2.2.4.1.1": {
+        "vendor": "Alcatel-Lucent",
+        "model": "OmniStack LS6224",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.41970.6.76": {
+        "vendor": "Orion",
+        "model": "Alpha-A10E",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.41970.1": {
+        "vendor": "Orion",
+        "model": "Alpha-A26",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.2011.2.23.88": {
+        "vendor": "HUAWEI",
+        "model": "Quidway S2309TP-EI",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.2011.2.23.92": {
+        "vendor": "HUAWEI",
+        "model": "Quidway S2326TP-EI",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.2011.2.23.94": {
+        "vendor": "HUAWEI",
+        "model": "Quidway S2352TP-EI",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.2011.2.23.96": {
+        "vendor": "HUAWEI",
+        "model": "Quidway S5328C-EI-24S",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.35265.1.78": {
+        "vendor": "ELTEX",
+        "model": "MES2324FB",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.25506.11.1.82": {
+        "vendor": "HP",
+        "model": "V1924",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.43.1.8.71": {
+        "vendor": "3COM",
+        "model": "Baseline 2920-SFP",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.989": {
+        "vendor": "Airspan Networks",
+        "model": "MicorMAX",
+        "category": "BSR"
+    },
+    ".1.3.6.1.4.1.3320.1.441.0": {
+        "vendor": "BDCOM",
+        "model": "P3310D",
+        "category": "OLT"
+    },
+    ".1.3.6.1.4.1.2021.10.5": {
+        "vendor": "CareLink",
+        "model": "CL48G4",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.9.12.3.1.3.1084": {
+        "vendor": "Cisco",
+        "model": "Nexus 5548UP",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.9.1.696": {
+        "vendor": "Cisco",
+        "model": "C2960G24TCL",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.9.1.516": {
+        "vendor": "Cisco",
+        "model": "C3750G24TS",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.171.10.134.2.1": {
+        "vendor": "D-Link",
+        "model": "DGS-1100-10/ME",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.11.2.3.7.11.74": {
+        "vendor": "HP",
+        "model": "1700-08",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.11.2.3.7.11.148": {
+        "vendor": "HP",
+        "model": "1810-08",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.3955.6.9.224.1": {
+        "vendor": "LinkSys",
+        "model": "SPS224G4",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.5205.2.23": {
+        "vendor": "RubyTech",
+        "model": "ES-2310C",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.15": {
+        "vendor": "SNR",
+        "model": "S2980G-8T",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.17": {
+        "vendor": "SNR",
+        "model": "S2990G-24TX",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.40418.7.44": {
+        "vendor": "SNR",
+        "model": "S2995G-12FX",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.890.1.5.8.16": {
+        "vendor": "Zyxel",
+        "model": "ES-2024A",
+        "category": "Switch"
+    },
+    ".1.3.6.1.4.1.890.1.5.8.27": {
+        "vendor": "Zyxel",
+        "model": "ES-2024PWR",
+        "category": "Switch"
+    }
+}
