@@ -5,13 +5,13 @@ DB_NAME = 'ndce.db'
 
 
 class UseDatabase:
-
+    
     def __init__(
         self, db_name: str = DB_NAME, db_commit: bool = False
     ) -> None:
         self.db_name = db_name
         self.db_commit = db_commit
-
+        
     def __enter__(self) -> None:
         try:
             self.conn = sqlite3.connect(self.db_name)
@@ -37,11 +37,3 @@ def make_db_request(sql_query: str) -> None:
             return cursor.fetchall()
         except Exception as e:
             print(e)
-
-
-def create_db(db_name: str) -> None:
-    make_db_request(sql_query=f'CREATE DATABASE IF NOT EXISTS {db_name}')
-
-
-def drop_db(db_name: str) -> None:
-    make_db_request(sql_query=f'DROP DATABASE IF EXISTS {db_name}')
