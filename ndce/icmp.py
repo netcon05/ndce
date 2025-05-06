@@ -39,11 +39,11 @@ async def host_is_accesable(host: str) -> bool:
     :param host: Hosts ip address
     :type host: str
 
-    :returns: True if the host is accesable or False otherwise
-    :rtype: bool
+    :returns: True if the host is accesable False otherwise
+    :rtype: boolis_ip_address(host):
     """
     result = await ping_host(host)
-    return bool(result[1])
+    return result[1]
 
 
 async def get_accesable_hosts(hosts: List[str]) -> List[str]:
@@ -60,7 +60,7 @@ async def get_accesable_hosts(hosts: List[str]) -> List[str]:
         try:
             tasks = [asyncio.create_task(ping_host(host)) for host in hosts]
             results = await asyncio.gather(*tasks)
-            return [result[0] for result in results if bool(result[1])]
+            return [result[0] for result in results if result[1]]
         except Exception as err:
             print('Could not get list of accesable hosts.', err)
     # List of hosts must contain at least one element.
