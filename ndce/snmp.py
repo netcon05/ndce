@@ -45,7 +45,7 @@ async def get_snmp_value(
         ) as snmp:
             try:
                 result = await snmp.get(oid)
-                if isinstance(result[0].value, bytes):
+                if not isinstance(result[0].value, str):
                     return result[0].value.decode('utf-8')
                 return result[0].value
             except Exception as err:
