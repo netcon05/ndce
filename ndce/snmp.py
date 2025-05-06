@@ -45,7 +45,9 @@ async def get_snmp_value(
         ) as snmp:
             try:
                 result = await snmp.get(oid)
-                return str(result[0].value)
+                if isinstance(result[0].value, bytes):
+                    return result[0].value.decode('utf-8')
+                return result[0].value
             except Exception as err:
                 print(f'Could not get {oid} value from {host} host.', err)
 
