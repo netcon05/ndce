@@ -68,12 +68,14 @@ async def get_device_info(host: str) -> str:
     result = await get_system_object_id(host)
     if result in MKT_SYS_OBJECT_IDS:
         if result == MKT_SYS_OBJECT_IDS[0]:
+            # RouterOS device
             # MikroTik routers snmp system description
             # is in 'RouterOS RB750GL' format.
             # We have to get rid of beginning RouterOS word.
             model = ''.join(get_system_description(host).split(' ')[1::])
             category = 'Router'
         elif result == MKT_SYS_OBJECT_IDS[1]:
+            # SwOS device
             # MikroTik switches snmp system description
             # is in 'RB260GS' format. We leave it as is.
             model = get_system_description(host)

@@ -5,6 +5,7 @@ from contextlib import closing
 
 
 IP_PROTO_TYPES = ('tcp', 'udp')
+
 SOCKET_TIMEOUT = 1
 
 
