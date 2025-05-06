@@ -175,3 +175,6 @@ cython_debug/
 
 # Macbook
 .DS_Store
+
+# Startup file for testing purposes
+main.py
