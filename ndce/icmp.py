@@ -28,7 +28,7 @@ async def ping_host(
             delay = await aioping.ping(host, timeout=timeout)
             return (host, delay > 0)
         except TimeoutError as err:
-            print(f'Host {host} is not accesable via icmp ping.', err)
+            print(err)
     return (host, False)
 
 
@@ -48,7 +48,7 @@ async def get_accesable_hosts(hosts: List[str]) -> List[str]:
             results = await asyncio.gather(*tasks)
             return [result[0] for result in results if result[1]]
         except Exception as err:
-            print('Could not get list of accesable hosts.', err)
+            print(err)
     # List of hosts must contain at least one element.
     # Otherwise empty list must be returned.
     return []
