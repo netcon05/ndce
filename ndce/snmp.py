@@ -1,12 +1,14 @@
 import aiosnmp
-from typing import Optional
+from typing import Optional, Dict, Any
 import json
 from ndce.net import is_ip_address
 
 
-SNMP_COMMUNITY = 'public'
 SNMP_PORT = 161
+SNMP_COMMUNITY = 'public'
 SNMP_TIMEOUT = 1
+SNMP_RETRIES = 1
+
 SNMP_SYS_NAME = '1.3.6.1.2.1.1.5.0'
 SNMP_SYS_DESCR = '1.3.6.1.2.1.1.1.0'
 SNMP_SYS_OBJECT_ID = '1.3.6.1.2.1.1.2.0'
@@ -24,48 +26,100 @@ async def get_snmp_value(
     host: str,
     port: Optional[int] = SNMP_PORT,
     community: Optional[str] = SNMP_COMMUNITY,
-    timeout: Optional[int] = SNMP_TIMEOUT
-) -> str:
-    if not is_ip_address(host):
-        print(f'{host} is not a valid ip address.')
-    elif not isinstance(port, int) or port < 0 or port > 65535:
-        print(f'{port} is not a valid ip port number.')
-    elif not community.strip():
-        print('No snmp community passed.')
-    elif not isinstance(timeout, int) or timeout < 0:
-        print(f'{timeout} is not a valid timeout number.')
-    else:
-        async with aiosnmp.Snmp(
-            host=host,
-            port=port,
-            community=community,
-            timeout=timeout
-        ) as snmp:
-            try:
-                result = await snmp.get(oid)
-                if not isinstance(result[0].value, str):
-                    return result[0].value.decode('utf-8')
-                return result[0].value
-            except Exception as err:
-                print(f'Could not get {oid} value from {host} host.', err)
+    timeout: Optional[int|float] = SNMP_TIMEOUT,
+    retries: Optional[int] = SNMP_RETRIES
+) -> Any:
+    """
+    Connects to the HOST using SNMP protocol and
+    retrieves data according to the passed snmp OID
+    
+    :param oid: SNMP OID
+    :type oid: str
+    
+    :param host: SNMP enabled devices ip address
+    :type host: str
+    
+    :param port: SNMP port default is 161
+    :type port: int
+    
+    :param community: SNMP GET community default is public
+    :type community: str
+    
+    :param timeout: SNMP timeout default is 1
+    :type timeout: Optional[int|float]
+    
+    :param retries: SNMP retries default is 1
+    :type retries: Optional[int]
+
+    :returns: Retrieved data
+    :rtype: Any
+    """
+    async with aiosnmp.Snmp(
+        host=host,
+        port=port,
+        community=community,
+        timeout=timeout,
+        retries=retries
+    ) as snmp:
+        try:
+            result = await snmp.get(oid)
+            if isinstance(result[0].value, bytes):
+                return result[0].value.decode('utf-8')
+            return str(result[0].value)
+        except Exception as err:
+            print(err)
+            return ''
 
 
 async def get_system_name(host: str) -> str:
-    result = await get_snmp_value(SNMP_SYS_NAME, host)
-    return result
+    """
+    Returns devices system name
+    
+    :param host: SNMP enabled devices ip address
+    :type host: str
+    
+    :returns: Retrieved data string
+    :rtype: str
+    """
+    return await get_snmp_value(SNMP_SYS_NAME, host)
 
 
 async def get_system_description(host: str) -> str:
-    result = await get_snmp_value(SNMP_SYS_DESCR, host)
-    return result
+    """
+    Returns devices system description
+    
+    :param host: SNMP enabled devices ip address
+    :type host: str
+    
+    :returns: Retrieved data string
+    :rtype: str
+    """
+    return await get_snmp_value(SNMP_SYS_DESCR, host)
 
 
 async def get_system_object_id(host: str) -> str:
-    result = await get_snmp_value(SNMP_SYS_OBJECT_ID, host)
-    return result
+    """
+    Returns devices system object id in OID format
+    
+    :param host: SNMP enabled devices ip address
+    :type host: str
+    
+    :returns: Retrieved data string
+    :rtype: str
+    """
+    return await get_snmp_value(SNMP_SYS_OBJECT_ID, host)
 
 
-async def get_device_info(host: str) -> str:
+async def get_device_info(host: str) -> Dict[str, str]:
+    """
+    Returns devices vendor name, model and category
+    
+    :param host: SNMP enabled devices ip address
+    :type host: str
+    
+    :returns: Dictionary with vendor name, model and category fields
+    :rtype: Dict[str, str]
+    """
     result = await get_system_object_id(host)
     if result in MKT_SYS_OBJECT_IDS:
         if result == MKT_SYS_OBJECT_IDS[0]:
@@ -88,28 +142,15 @@ async def get_device_info(host: str) -> str:
             'category': category
         }
     else:
-        with open(SYS_OBJECT_IDS_DB) as file:
-            sys_object_ids = json.load(file)
-        if result in sys_object_ids.keys():
-            return sys_object_ids[result]
-        else:
-            return {
-                'vendor': 'Unknown',
-                'model': 'Unknown',
-                'category': 'Unknown'
-            }
-
-
-async def get_vendor_name(host: str) -> str:
-    result = await get_device_info(host)
-    return result.vendor
-
-
-async def get_model_name(host: str) -> str:
-    result = await get_device_info(host)
-    return result.model
-
-
-async def get_device_category(host: str) -> str:
-    result = await get_device_info(host)
-    return result.category
+        try:
+            with open(SYS_OBJECT_IDS_DB) as file:
+                sys_object_ids = json.load(file)
+            if result in sys_object_ids.keys():
+                return sys_object_ids[result]
+        except Exception as err:
+            print(err)
+    return {
+        'vendor': 'Unknown',
+        'model': 'Unknown',
+        'category': 'Unknown'
+    }

@@ -1,7 +1,6 @@
 from typing import List, Optional
 import ipaddress
 import socket
-from contextlib import closing
 
 
 IP_PROTO_TYPES = ('tcp', 'udp')
@@ -19,15 +18,12 @@ def is_ip_address(host: str) -> bool:
     :returns: Parameters format is valid or not
     :rtype: bool
     """
-    if host.strip():
-        try:
-            ipaddress.ip_address(host)
-            return True
-        except ValueError as err:
-            print(err)
-    else:
-        print('No ip address passed.')
-    return False
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError as err:
+        print(err)
+        return False
 
 
 def is_ip_subnet(subnet: str) -> bool:
@@ -40,15 +36,12 @@ def is_ip_subnet(subnet: str) -> bool:
     :returns: Parameters format is valid or not
     :rtype: bool
     """
-    if subnet.strip():
-        try:
-            ipaddress.ip_network(subnet)
-            return True
-        except ValueError as err:
-            print(err)
-    else:
-        print('No subnet passed.')
-    return False
+    try:
+        ipaddress.ip_network(subnet)
+        return True
+    except ValueError as err:
+        print(err)
+        return False
 
 
 def get_hosts_from_subnet(subnet: str) -> List[str]:
@@ -65,7 +58,7 @@ def get_hosts_from_subnet(subnet: str) -> List[str]:
         try:
             return [str(host) for host in ipaddress.ip_network(subnet).hosts()]
         except Exception as err:
-            print(f'Could not get list of hosts from {subnet} subnet.', err)
+            print(err)
     # Subnet parameter has to be passed and in a valid format.
     # Otherwise empty list must be returned.
     return []
@@ -91,21 +84,15 @@ def tcp_port_is_open(
     :returns: Port is open (True) or not (False)
     :rtype: bool
     """
-    if not is_ip_address(host):
-        print(f'{host} is not a valid ip address.')
-    elif not isinstance(port, int) or port < 0 or port > 65535:
-        print(f'{port} is not a valid ip port number.')
-    elif not isinstance(timeout, (int, float)) or timeout < 0:
-        print(f'{timeout} is not a valid timeout number.')
-    else:
-        if ipaddress.ip_address(host).version == 4:
-            family = socket.AF_INET
-        else:
-            family = socket.AF_INET6
-        with closing(socket.socket(family, socket.SOCK_STREAM)) as sock:
-            sock.settimeout(timeout)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(timeout)
+        try:
             return sock.connect_ex((host, port)) == 0
-    return False
+        except Exception as err:
+            print(err)
+            return False
+        finally:
+            sock.close()
 
 
 def telnet_is_enabled(host: str) -> bool:
