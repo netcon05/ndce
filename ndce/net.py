@@ -71,11 +71,10 @@ def get_hosts_from_subnet(subnet: str) -> List[str]:
     return []
 
 
-def port_is_open(
+def tcp_port_is_open(
     host: str,
-    protocol: str,
     port: int,
-    timeout: Optional[float] = SOCKET_TIMEOUT
+    timeout: Optional[float|int] = SOCKET_TIMEOUT
 ) -> bool:
     """
     Checks if the port is open on ip address for defined protocol
@@ -83,67 +82,30 @@ def port_is_open(
     :param host: Checked ip address
     :type host: str
     
-    :param protocol: Checked protocol either TCP or UDP
-    :type protocol: str
-    
     :param port: Checked port number from 1 to 65535
     :type port: int
     
     :param timeout: Socket timeout in seconds (float is valid)
-    :type timeout: Optional[float]
+    :type timeout: Optional[float|int]
 
     :returns: Port is open (True) or not (False)
     :rtype: bool
     """
     if not is_ip_address(host):
         print(f'{host} is not a valid ip address.')
-    elif not protocol in IP_PROTO_TYPES:
-        print(f'{protocol} is not a valid ip protocol.')
     elif not isinstance(port, int) or port < 0 or port > 65535:
         print(f'{port} is not a valid ip port number.')
-    elif not isinstance(float(timeout), float) or timeout < 0:
+    elif not isinstance(timeout, (int, float)) or timeout < 0:
         print(f'{timeout} is not a valid timeout number.')
     else:
-        if protocol == IP_PROTO_TYPES[0]:
-            proto = socket.SOCK_STREAM
-        elif protocol == IP_PROTO_TYPES[1]:
-            proto = socket.SOCK_DGRAM
-        with closing(socket.socket(socket.AF_INET, proto)) as sock:
+        if ipaddress.ip_address(host).version == 4:
+            family = socket.AF_INET
+        else:
+            family = socket.AF_INET6
+        with closing(socket.socket(family, socket.SOCK_STREAM)) as sock:
             sock.settimeout(timeout)
             return sock.connect_ex((host, port)) == 0
     return False
-
-
-def tcp_port_is_open(host: str, port: int) -> bool:
-    """
-    Checks if the port is open on ip address for TCP protocol
-
-    :param host: Checked ip address
-    :type host: str
-    
-    :param port: Checked port number from 1 to 65535
-    :type port: int
-
-    :returns: Port is open (True) or not (False)
-    :rtype: bool
-    """
-    return port_is_open(host, 'tcp', port)
-
-
-def udp_port_is_open(host: str, port: int) -> bool:
-    """
-    Checks if the port is open on ip address for UDP protocol
-
-    :param host: Checked ip address
-    :type host: str
-    
-    :param port: Checked port number from 1 to 65535
-    :type port: int
-
-    :returns: Port is open (True) or not (False)
-    :rtype: bool
-    """
-    return port_is_open(host, 'udp', port)
 
 
 def telnet_is_enabled(host: str) -> bool:
@@ -170,16 +132,3 @@ def ssh_is_enabled(host: str) -> bool:
     :rtype: bool
     """
     return tcp_port_is_open(host, 22)
-
-
-def snmp_is_enabled(host: str) -> bool:
-    """
-    Checks if the port udp/161 (SNMP) is open on the ip address
-
-    :param host: Checked ip address
-    :type host: str
-
-    :returns: Port is open (True) or not (False)
-    :rtype: bool
-    """
-    return udp_port_is_open(host, 161)

@@ -3,7 +3,6 @@ import aiosnmp
 from typing import Optional
 import json
 from ndce.net import is_ip_address
-from ndce.helpers import NestedNamespace
 
 
 SNMP_COMMUNITY = 'public'
@@ -84,22 +83,22 @@ async def get_device_info(host: str) -> str:
             # is in 'RB260GS' format. We leave it as is.
             model = get_system_description(host)
             category = 'Switch'
-        return NestedNamespace({
+        return {
             'vendor': 'MikroTik',
             'model': model,
             'category': category
-        })
+        }
     else:
         with open(SYS_OBJECT_IDS_DB) as file:
             sys_object_ids = json.load(file)
         if result in sys_object_ids.keys():
-            return NestedNamespace(sys_object_ids[result])
+            return sys_object_ids[result]
         else:
-            return NestedNamespace({
+            return {
                 'vendor': 'Unknown',
                 'model': 'Unknown',
                 'category': 'Unknown'
-            })
+            }
 
 
 async def get_vendor_name(host: str) -> str:
