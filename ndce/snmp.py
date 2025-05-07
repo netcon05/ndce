@@ -1,4 +1,3 @@
-from traceback import print_tb
 import aiosnmp
 from typing import Optional
 import json
