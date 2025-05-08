@@ -147,7 +147,7 @@ async def get_device_info(host: str) -> Dict[str, str]:
             with open(SYS_OBJECT_IDS_DB) as file:
                 sys_object_ids = json.load(file)
             if result in sys_object_ids.keys():
-                return sys_object_ids[result]
+                return sys_object_ids[result].update({'host': host})
         except Exception as err:
             print(err)
     return {
