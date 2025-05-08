@@ -81,7 +81,8 @@ async def get_system_name(host: str) -> str:
     :returns: Retrieved data string
     :rtype: str
     """
-    return await get_snmp_value(SNMP_SYS_NAME, host)
+    result = await get_snmp_value(SNMP_SYS_NAME, host)
+    return result
 
 
 async def get_system_description(host: str) -> str:
@@ -94,7 +95,8 @@ async def get_system_description(host: str) -> str:
     :returns: Retrieved data string
     :rtype: str
     """
-    return await get_snmp_value(SNMP_SYS_DESCR, host)
+    result = await get_snmp_value(SNMP_SYS_DESCR, host)
+    return result
 
 
 async def get_system_object_id(host: str) -> str:
@@ -107,7 +109,8 @@ async def get_system_object_id(host: str) -> str:
     :returns: Retrieved data string
     :rtype: str
     """
-    return await get_snmp_value(SNMP_SYS_OBJECT_ID, host)
+    result = await get_snmp_value(SNMP_SYS_OBJECT_ID, host)
+    return result
 
 
 async def get_device_info(host: str) -> Dict[str, str]:
@@ -120,9 +123,9 @@ async def get_device_info(host: str) -> Dict[str, str]:
     :returns: Dictionary with vendor name, model and category fields
     :rtype: Dict[str, str]
     """
-    result = await get_system_object_id(host)
-    if result in MKT_SYS_OBJECT_IDS:
-        if result == MKT_SYS_OBJECT_IDS[0]:
+    sys_object_id = await get_system_object_id(host)
+    if sys_object_id in MKT_SYS_OBJECT_IDS:
+        if sys_object_id == MKT_SYS_OBJECT_IDS[0]:
             # RouterOS device
             # MikroTik routers snmp system description
             # is in 'RouterOS RB750GL' format.
@@ -130,7 +133,7 @@ async def get_device_info(host: str) -> Dict[str, str]:
             sys_descr = await get_system_description(host)
             model = ''.join(sys_descr.split()[1::])
             category = 'Router'
-        elif result == MKT_SYS_OBJECT_IDS[1]:
+        elif sys_object_id == MKT_SYS_OBJECT_IDS[1]:
             # SwOS device
             # MikroTik switches snmp system description
             # is in 'RB260GS' format. We leave it as is.
@@ -146,8 +149,10 @@ async def get_device_info(host: str) -> Dict[str, str]:
         try:
             with open(SYS_OBJECT_IDS_DB) as file:
                 sys_object_ids = json.load(file)
-            if result in sys_object_ids.keys():
-                return sys_object_ids[result].update({'host': host})
+            if sys_object_id in sys_object_ids.keys():
+                result = sys_object_ids[sys_object_id]
+                result['host'] = host
+                return result
         except Exception as err:
             print(err)
     return {
