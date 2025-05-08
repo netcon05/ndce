@@ -137,6 +137,7 @@ async def get_device_info(host: str) -> Dict[str, str]:
             model = get_system_description(host)
             category = 'Switch'
         return {
+            'host': host,
             'vendor': 'MikroTik',
             'model': model,
             'category': category
@@ -150,6 +151,7 @@ async def get_device_info(host: str) -> Dict[str, str]:
         except Exception as err:
             print(err)
     return {
+        'host': host,
         'vendor': 'Unknown',
         'model': 'Unknown',
         'category': 'Unknown'
