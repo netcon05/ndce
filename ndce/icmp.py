@@ -4,7 +4,7 @@ import aioping
 from ndce.net import is_ip_address
 
 
-PING_TIMEOUT = 1
+PING_TIMEOUT = 5
 
 
 async def ping_host(
