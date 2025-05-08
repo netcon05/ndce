@@ -1,7 +1,7 @@
 import sqlite3
 
 
-DB_NAME = 'ndce.db'
+DB_NAME = 'ndce/ndce.db'
 
 
 class UseDatabase:
@@ -22,8 +22,9 @@ class UseDatabase:
 
     def __exit__(self, exc_type, exc_value, exc_trace) -> None:
         try:
-            if self.db_commit:
-                self.conn.commit()
+            print()
+            #if self.db_commit:
+            self.conn.commit()
             self.cursor.close()
             self.conn.close()
         except Exception as e:
@@ -34,6 +35,15 @@ def make_db_request(sql_query: str) -> None:
     with UseDatabase() as cursor:
         try:
             cursor.execute(sql_query)
+            return cursor.fetchall()
+        except Exception as e:
+            print(e)
+
+def insert_db(sql_query: str, row: tuple[str]) -> None:
+    with UseDatabase() as cursor:
+        print(sql_query, row)
+        try:
+            cursor.execute(sql_query, row)
             return cursor.fetchall()
         except Exception as e:
             print(e)

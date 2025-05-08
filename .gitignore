@@ -178,3 +178,4 @@ cython_debug/
 
 # Startup file for testing purposes
 main.py
+ndce/ndce.db
