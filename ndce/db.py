@@ -54,7 +54,7 @@ def update_db(result: dict):
     for i in result:
         row = (('vendor', i['vendor'], i['host']),('model', i["model"], i['host']),('category', i['category'], i['host']))
         for data in row:
-            sql_query_update = f"UPDATE Device set {data[0]} = ? WHERE host = ?"
+            sql_query_update = f"UPDATE Device set {data} = ? WHERE host = ?"
             insert_db_request(sql_query_update, data[1:])
 
 
@@ -63,3 +63,6 @@ def insert_db(result: dict):
     for i in result:
         row = (str(i["vendor"]), str(i["model"]), str(i["category"]), str(i["host"]))
         insert_db_request(sql_query_add, row)
+
+
+
