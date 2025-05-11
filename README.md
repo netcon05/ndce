@@ -1,26 +1,26 @@
 # NDCE
 ## Network Device Configuration Editor
 
-This application is used to make changes to network device configuration remotely using **TELNET** or **SSH** protocols.
+Приложение для удаленного изменения конфигураций сетевых устройств используя протокол **TELNET** или **SSH**.
 
-The information about network devices is gathered using **SNMP** protocol.
+Информация об устройстве собирается с применением протокола **SNMP**.
 
-The application does its job asynchronously.
+Приложение работает асинхронно.
 
-**On linux systems in order to make icmp pings use the hack below.**
+В системах на базе ядра Linux для корректной отправки пингов выполните следующее:
 
-1. Open sysctl.conf in your text editor
+1. Откройте конфигурационный файл sysctl.conf в текстовом редакторе.
     
     ```sudo nano /etc/sysctl.conf```
 
-2. Add code below to the end of the config file
+2. Добавьте в конец файла код, указанный ниже.
 
     `net.ipv4.ping_group_range = 0 1000`
 
-3. Save the file.
+3. Сохраните файл.
 
-4. Apply changes.
+4. Примените внесенные изменения.
 
     `sudo sysctl -p`
 
-> 0 1000 is a range of user ids who has permission to make icmp pings.
+> 0 1000 - диапозон идентификаторов пользователей кому предоставлены права на отправку пингов.

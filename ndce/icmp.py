@@ -10,15 +10,15 @@ async def ping_host(
     timeout: Optional[int|float] = PING_TIMEOUT
 ) -> Tuple[str, bool]:
     """
-    Checks the host for accesability via icmp ping
+    Проверяет доступность устройства по icmp ping
 
-    :param host: Hosts ip address
+    :param host: IP адрес устройства
     :type host: str
     
-    :param timeout: Icmp ping timeout
+    :param timeout: Таймаут пинга
     :type timeout: Optional[int|float]
 
-    :returns: Tuple with host address and bool value (accesable or not)
+    :returns: Кортедж с адресом и статусом его доступности
     :rtype: Tuple[str, bool]
     """
     if is_ip_address(host):
@@ -32,12 +32,12 @@ async def ping_host(
 
 async def get_accesable_hosts(hosts: List[str]) -> List[str]:
     """
-    Returns list of hosts accesable via icmp ping
+    Возвращает список устройств, доступных по icmp ping
 
-    :param hosts: List of hosts to check for accesability
+    :param hosts: Список IP адресов устройств, подлежащих проверке
     :type hosts: List[str]
 
-    :returns: List of accesable hosts
+    :returns: Список IP адресов, доступных по icmp ping
     :rtype: List[str]
     """
     if len(hosts):
@@ -47,6 +47,6 @@ async def get_accesable_hosts(hosts: List[str]) -> List[str]:
             return [result[0] for result in results if result[1]]
         except Exception as err:
             print(err)
-    # List of hosts must contain at least one element.
-    # Otherwise empty list must be returned.
+    # Список IP адресов не должен быть пустым.
+    # Иначе возвращаем также пустой список.
     return []

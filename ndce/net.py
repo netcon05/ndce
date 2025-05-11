@@ -6,12 +6,12 @@ from config import SOCKET_TIMEOUT
 
 def is_ip_address(host: str) -> bool:
     """
-    Checks if passed parameter is in valid ip address format 
+    Проверяет соответствует ли заданный параметр формату IP адреса
 
-    :param host: Ip address in 'x.x.x.x/y' format
+    :param host: IP адрес в формате 'x.x.x.x/y'
     :type host: str
 
-    :returns: Parameters format is valid or not
+    :returns: Параметр соответствует формату IP адреса
     :rtype: bool
     """
     try:
@@ -24,12 +24,12 @@ def is_ip_address(host: str) -> bool:
 
 def is_ip_subnet(subnet: str) -> bool:
     """
-    Checks if passed parameter is in valid ip subnet format 
+    Проверяет соответствует ли заданный параметр формату подсети
 
-    :param subnet: Subnet in 'x.x.x.x/y' format
+    :param subnet: Подсеть в формате 'x.x.x.x/y'
     :type subnet: str
 
-    :returns: Parameters format is valid or not
+    :returns: Параметр соответствует формату подсети
     :rtype: bool
     """
     try:
@@ -42,12 +42,12 @@ def is_ip_subnet(subnet: str) -> bool:
 
 def get_hosts_from_subnet(subnet: str) -> List[str]:
     """
-    Returns list of host addresses of the subnet
+    Возвращает список хостовых IP адресов из заданной подсети
 
-    :param subnet: Subnet in 'x.x.x.x/y' format
+    :param subnet: Подсеть в формате 'x.x.x.x/y'
     :type subnet: str
 
-    :returns: List of host addresses
+    :returns: Список хостовых IP адресов
     :rtype: List[str]
     """
     if is_ip_subnet(subnet):
@@ -55,8 +55,8 @@ def get_hosts_from_subnet(subnet: str) -> List[str]:
             return [str(host) for host in ipaddress.ip_network(subnet).hosts()]
         except Exception as err:
             print(err)
-    # Subnet parameter has to be passed and in a valid format.
-    # Otherwise empty list must be returned.
+    # Подсеть должна быть задана и в правильно формате.
+    # Иначе необходимо вернуть пустой список.
     return []
 
 
@@ -66,18 +66,19 @@ def tcp_port_is_open(
     timeout: Optional[float|int] = SOCKET_TIMEOUT
 ) -> bool:
     """
-    Checks if the port is open on ip address for defined protocol
+    Проверяем открыт ли порт по указанному протоколу
+    на заданном IP адресе
 
-    :param host: Checked ip address
+    :param host: IP адрес, подлежащий проверке
     :type host: str
     
-    :param port: Checked port number from 1 to 65535
+    :param port: Порт, подлежащий проверке, в диапозоне 1-65535
     :type port: int
     
-    :param timeout: Socket timeout in seconds (float is valid)
+    :param timeout: Таймаут сокета в секундах (можно указать дробное значение)
     :type timeout: Optional[float|int]
 
-    :returns: Port is open (True) or not (False)
+    :returns: Открыт ли порт по указанному протоколу на заданном IP адресе
     :rtype: bool
     """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -93,12 +94,13 @@ def tcp_port_is_open(
 
 def telnet_is_enabled(host: str) -> bool:
     """
-    Checks if the port tcp/23 (TELNET) is open on the ip address
+    Проверяем открыт ли 23 порт по протоколу tcp
+    на заданном IP адресе
 
-    :param host: Checked ip address
+    :param host: IP адрес, подлежащий проверке
     :type host: str
 
-    :returns: Port is open (True) or not (False)
+    :returns: Открыт ли telnet на заданном устройстве
     :rtype: bool
     """
     return tcp_port_is_open(host, 23)
@@ -106,12 +108,13 @@ def telnet_is_enabled(host: str) -> bool:
 
 def ssh_is_enabled(host: str) -> bool:
     """
-    Checks if the port tcp/22 (SSH) is open on the ip address
+    Проверяем открыт ли 22 порт по протоколу tcp
+    на заданном IP адресе
 
-    :param host: Checked ip address
+    :param host: IP адрес, подлежащий проверке
     :type host: str
 
-    :returns: Port is open (True) or not (False)
+    :returns: Открыт ли ssh на заданном устройстве
     :rtype: bool
     """
     return tcp_port_is_open(host, 22)

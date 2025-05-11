@@ -1,7 +1,6 @@
 import aiosnmp
 from typing import Optional, Dict, Any
 import json
-from ndce.net import is_ip_address
 from config import (
     SNMP_PORT,
     SNMP_COMMUNITY,
@@ -24,28 +23,28 @@ async def get_snmp_value(
     retries: Optional[int] = SNMP_RETRIES
 ) -> Any:
     """
-    Connects to the HOST using SNMP protocol and
-    retrieves data according to the passed snmp OID
+    Подключается к заданному хосту по протоколу SNMP и
+    получает данные в соответствии с указанным OID
     
     :param oid: SNMP OID
     :type oid: str
     
-    :param host: SNMP enabled devices ip address
+    :param host: IP адрес устройства с включенным SNMP
     :type host: str
     
-    :param port: SNMP port default is 161
+    :param port: SNMP порт
     :type port: int
     
-    :param community: SNMP GET community default is public
+    :param community: SNMP комьюнити только для чтения
     :type community: str
     
-    :param timeout: SNMP timeout default is 1
+    :param timeout: SNMP таймаут
     :type timeout: Optional[int|float]
     
-    :param retries: SNMP retries default is 1
+    :param retries: Количество попыток для SNMP
     :type retries: Optional[int]
 
-    :returns: Retrieved data
+    :returns: Полученные данные
     :rtype: Any
     """
     async with aiosnmp.Snmp(
@@ -67,12 +66,12 @@ async def get_snmp_value(
 
 async def get_system_name(host: str) -> str:
     """
-    Returns devices system name
+    Возвращает sys_name
     
-    :param host: SNMP enabled devices ip address
+    :param host: IP адрес устройства с включенным SNMP
     :type host: str
     
-    :returns: Retrieved data string
+    :returns: sys_name устройства
     :rtype: str
     """
     result = await get_snmp_value(SNMP_SYS_NAME, host)
@@ -81,12 +80,12 @@ async def get_system_name(host: str) -> str:
 
 async def get_system_description(host: str) -> str:
     """
-    Returns devices system description
+    Возвращает sys_descr
     
-    :param host: SNMP enabled devices ip address
+    :param host: IP адрес устройства с включенным SNMP
     :type host: str
     
-    :returns: Retrieved data string
+    :returns: sys_descr устройства
     :rtype: str
     """
     result = await get_snmp_value(SNMP_SYS_DESCR, host)
@@ -95,12 +94,12 @@ async def get_system_description(host: str) -> str:
 
 async def get_system_object_id(host: str) -> str:
     """
-    Returns devices system object id in OID format
+    Возвращает sys_object_id в формате OID
     
-    :param host: SNMP enabled devices ip address
+    :param host: IP адрес устройства с включенным SNMP
     :type host: str
     
-    :returns: Retrieved data string
+    :returns: OID sys_object_id устройства
     :rtype: str
     """
     result = await get_snmp_value(SNMP_SYS_OBJECT_ID, host)
@@ -109,28 +108,28 @@ async def get_system_object_id(host: str) -> str:
 
 async def get_device_info(host: str) -> Dict[str, str]:
     """
-    Returns devices vendor name, model and category
+    Возвращает данные о вендоре, моделе, категории
+    и ip адресе устройства
     
-    :param host: SNMP enabled devices ip address
+    :param host: IP адрес устройства с включенным SNMP
     :type host: str
     
-    :returns: Dictionary with vendor name, model and category fields
+    :returns: Словарь с полями вендор, модель, категория и адрес
     :rtype: Dict[str, str]
     """
     sys_object_id = await get_system_object_id(host)
     if sys_object_id in MKT_SYS_OBJECT_IDS:
         if sys_object_id == MKT_SYS_OBJECT_IDS[0]:
-            # RouterOS device
-            # MikroTik routers snmp system description
-            # is in 'RouterOS RB750GL' format.
-            # We have to get rid of beginning RouterOS word.
+            # RouterOS устройство
+            # Маршрутизаторы MikroTik отдают SYS_DESCR в формате
+            # 'RouterOS RB750GL'. Необходимо удалить начальное RouterOS.
             sys_descr = await get_system_description(host)
             model = ''.join(sys_descr.split()[1::])
             category = 'Router'
         elif sys_object_id == MKT_SYS_OBJECT_IDS[1]:
-            # SwOS device
-            # MikroTik switches snmp system description
-            # is in 'RB260GS' format. We leave it as is.
+            # SwOS устройство
+            # Коммутаторы MikroTik отдают SYS_DESCR в формате
+            # 'RB260GS'. Оставляем как есть.
             model = get_system_description(host)
             category = 'Switch'
         return {
