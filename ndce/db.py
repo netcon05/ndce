@@ -37,7 +37,8 @@ def make_db_request(sql_query: str) -> None:
         except Exception as e:
             print(e)
 
-def insert_db(sql_query: str, row: tuple[str]) -> None:
+
+def insert_db_request(sql_query: str, row: tuple[str]) -> None:
     with UseDatabase() as cursor:
         print(sql_query, row)
         try:
@@ -45,3 +46,21 @@ def insert_db(sql_query: str, row: tuple[str]) -> None:
             return cursor.fetchall()
         except Exception as e:
             print(e)
+
+
+def update_db(result: dict):    
+    for i in result:
+        row = (('vendor', i['vendor'], i['host']),('model', i["model"], i['host']),('category', i['category'], i['host']))
+        for data in row:
+            sql_query_update = f"UPDATE Device set {data} = ? WHERE host = ?"
+            insert_db_request(sql_query_update, data[1:])
+
+
+def insert_db(result: dict):
+    sql_query_add = "INSERT into Device values (?, ?, ?, ?)"
+    for i in result:
+        row = (str(i["vendor"]), str(i["model"]), str(i["category"]), str(i["host"]))
+        insert_db_request(sql_query_add, row)
+
+
+
