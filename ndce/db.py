@@ -1,7 +1,5 @@
 import sqlite3
-
-
-DB_NAME = 'ndce/ndce.db'
+from config import DB_NAME
 
 
 class UseDatabase:

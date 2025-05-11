@@ -2,9 +2,7 @@ from typing import List, Tuple, Optional
 import asyncio
 import aioping
 from ndce.net import is_ip_address
-
-
-PING_TIMEOUT = 5
+from config import PING_TIMEOUT
 
 
 async def ping_host(

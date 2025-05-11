@@ -1,9 +1,7 @@
 from typing import List, Optional
 import ipaddress
 import socket
-
-
-SOCKET_TIMEOUT = 1
+from config import SOCKET_TIMEOUT
 
 
 def is_ip_address(host: str) -> bool:
