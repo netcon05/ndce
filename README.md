@@ -1,5 +1,4 @@
-# NDCE
-## Network Device Configuration Editor
+# NDCE : Network Device Configuration Editor
 
 Приложение для удаленного изменения конфигураций сетевых устройств используя протокол **TELNET** или **SSH**.
 
