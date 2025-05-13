@@ -1,14 +1,16 @@
-from typing import List, Tuple, Optional
+from typing import List, Optional
 import asyncio
 import aioping
+from nicegui.html import div
 from ndce.net import is_ip_address
-from config import PING_TIMEOUT
+from config import PING_TIMEOUT, PING_RETRIES
 
 
 async def ping_host(
     host: str,
-    timeout: Optional[int|float] = PING_TIMEOUT
-) -> Tuple[str, bool]:
+    timeout: Optional[int|float] = PING_TIMEOUT,
+    count: Optional[int] = PING_RETRIES
+) -> tuple[str, bool]:
     """
     Проверяет доступность устройства по icmp ping
 
@@ -17,16 +19,20 @@ async def ping_host(
     
     :param timeout: Таймаут пинга
     :type timeout: Optional[int|float]
+    
+    :param count: Количество попыток пинга
+    :type count: Optional[int]
 
     :returns: Кортедж с адресом и статусом его доступности
-    :rtype: Tuple[str, bool]
+    :rtype: tuple[str, bool]
     """
     if is_ip_address(host):
-        try:
-            delay = await aioping.ping(host, timeout=timeout)
-            return (host, delay > 0)
-        except TimeoutError as err:
-            print(err)
+        for _ in range(count):
+            try:
+                delay = await aioping.ping(host, timeout=timeout)
+                return (host, True)
+            except TimeoutError as err:
+                print(err)
     return (host, False)
 
 
@@ -42,7 +48,9 @@ async def get_accesable_hosts(hosts: List[str]) -> List[str]:
     """
     if len(hosts):
         try:
-            tasks = [asyncio.create_task(ping_host(host)) for host in hosts]
+            tasks = [
+                asyncio.create_task(ping_host(host)) for host in hosts
+            ]
             results = await asyncio.gather(*tasks)
             return [result[0] for result in results if result[1]]
         except Exception as err:

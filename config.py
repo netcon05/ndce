@@ -2,7 +2,8 @@ APP_TITLE = 'NDCE : Network Device Configuration Editor'
 
 DB_NAME = 'ndce/ndce.db'
 
-PING_TIMEOUT = 5
+PING_TIMEOUT = 1
+PING_RETRIES = 2
 
 SOCKET_TIMEOUT = 1
 
@@ -27,61 +28,53 @@ COLUMNS_SETTINGS = [
         'name': 'address',
         'label': 'Адрес',
         'field': 'address',
-        'required': True,
-        'sortable': True
+        'required': True
     },
     {
         'name': 'hostname',
         'label': 'Имя',
         'field': 'hostname',
-        'required': True,
-        'sortable': True
+        'required': True
     },
     {
         'name': 'vendor',
         'label': 'Производитель',
         'field': 'vendor',
-        'required': True,
-        'sortable': True
+        'required': True
     },
     {
         'name': 'model',
         'label': 'Модель',
         'field': 'model',
-        'required': True,
-        'sortable': True
+        'required': True
     },
     {
         'name': 'category',
         'label': 'Категория',
         'field': 'category',
-        'required': True,
-        'sortable': True
+        'required': True
     },
     {
         'name': 'snmp',
         'label': 'Snmp',
         'field': 'snmp',
-        'required': True,
-        'sortable': False
+        'required': True
     },
     {
         'name': 'telnet',
         'label': 'Telnet',
         'field': 'telnet',
-        'required': True,
-        'sortable': False
+        'required': True
     },
     {
         'name': 'ssh',
         'label': 'Ssh',
         'field': 'ssh',
-        'required': True,
-        'sortable': False
+        'required': True
     },
 ]
 
 COLUMNS_DEFAULTS = {
     'align': 'center',
-    'headerClasses': 'text-primary',
+    'headerClasses': 'text-primary'
 }
