@@ -28,30 +28,35 @@ COLUMNS_SETTINGS = [
         'name': 'address',
         'label': 'Адрес',
         'field': 'address',
+        'sortable': True,
         'required': True
     },
     {
         'name': 'hostname',
         'label': 'Имя',
         'field': 'hostname',
+        'sortable': True,
         'required': True
     },
     {
         'name': 'vendor',
         'label': 'Производитель',
         'field': 'vendor',
+        'sortable': True,
         'required': True
     },
     {
         'name': 'model',
         'label': 'Модель',
         'field': 'model',
+        'sortable': True,
         'required': True
     },
     {
         'name': 'category',
         'label': 'Категория',
         'field': 'category',
+        'sortable': True,
         'required': True
     },
     {

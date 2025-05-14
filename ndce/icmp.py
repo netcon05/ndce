@@ -1,8 +1,5 @@
 from typing import List, Optional
-import asyncio
 import aioping
-from nicegui.html import div
-from ndce.net import is_ip_address
 from config import PING_TIMEOUT, PING_RETRIES
 
 
@@ -26,13 +23,12 @@ async def ping_host(
     :returns: Кортедж с адресом и статусом его доступности
     :rtype: tuple[str, bool]
     """
-    if is_ip_address(host):
-        for _ in range(count):
-            try:
-                delay = await aioping.ping(host, timeout=timeout)
-                return (host, True)
-            except TimeoutError as err:
-                print(err)
+    for _ in range(count):
+        try:
+            await aioping.ping(host, timeout=timeout)
+            return (host, True)
+        except:
+            pass
     return (host, False)
 
 
@@ -46,15 +42,11 @@ async def get_accesable_hosts(hosts: List[str]) -> List[str]:
     :returns: Список IP адресов, доступных по icmp ping
     :rtype: List[str]
     """
-    if len(hosts):
-        try:
-            tasks = [
-                asyncio.create_task(ping_host(host)) for host in hosts
-            ]
-            results = await asyncio.gather(*tasks)
-            return [result[0] for result in results if result[1]]
-        except Exception as err:
-            print(err)
+    accesable_hosts = []
+    for host in hosts:
+        result = await ping_host(host)
+        if result[1]:
+            accesable_hosts.append(result[0])
     # Список IP адресов не должен быть пустым.
     # Иначе возвращаем также пустой список.
-    return []
+    return accesable_hosts

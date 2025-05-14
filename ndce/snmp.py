@@ -16,7 +16,7 @@ from config import (
 
 async def get_snmp_value(
     oid: str,
-    host: str,
+    ip: str,
     port: Optional[int] = SNMP_PORT,
     community: Optional[str] = SNMP_COMMUNITY,
     timeout: Optional[int|float] = SNMP_TIMEOUT,
@@ -29,8 +29,8 @@ async def get_snmp_value(
     :param oid: SNMP OID
     :type oid: str
     
-    :param host: IP адрес устройства с включенным SNMP
-    :type host: str
+    :param ip: IP адрес устройства с включенным SNMP
+    :type ip: str
     
     :param port: SNMP порт
     :type port: int
@@ -48,7 +48,7 @@ async def get_snmp_value(
     :rtype: Any
     """
     async with aiosnmp.Snmp(
-        host=host,
+        host=ip,
         port=port,
         community=community,
         timeout=timeout,
@@ -64,79 +64,79 @@ async def get_snmp_value(
             return ''
 
 
-async def get_system_name(host: str) -> str:
+async def get_system_name(ip: str) -> str:
     """
     Возвращает sys_name
     
-    :param host: IP адрес устройства с включенным SNMP
-    :type host: str
+    :param ip: IP адрес устройства с включенным SNMP
+    :type ip: str
     
     :returns: sys_name устройства
     :rtype: str
     """
-    result = await get_snmp_value(SNMP_SYS_NAME, host)
+    result = await get_snmp_value(SNMP_SYS_NAME, ip)
     return result
 
 
-async def get_system_description(host: str) -> str:
+async def get_system_description(ip: str) -> str:
     """
     Возвращает sys_descr
     
-    :param host: IP адрес устройства с включенным SNMP
-    :type host: str
+    :param ip: IP адрес устройства с включенным SNMP
+    :type hoipst: str
     
     :returns: sys_descr устройства
     :rtype: str
     """
-    result = await get_snmp_value(SNMP_SYS_DESCR, host)
+    result = await get_snmp_value(SNMP_SYS_DESCR, ip)
     return result
 
 
-async def get_system_object_id(host: str) -> str:
+async def get_system_object_id(ip: str) -> str:
     """
     Возвращает sys_object_id в формате OID
     
-    :param host: IP адрес устройства с включенным SNMP
-    :type host: str
+    :param ip: IP адрес устройства с включенным SNMP
+    :type ip: str
     
     :returns: OID sys_object_id устройства
     :rtype: str
     """
-    result = await get_snmp_value(SNMP_SYS_OBJECT_ID, host)
+    result = await get_snmp_value(SNMP_SYS_OBJECT_ID, ip)
     return result
 
 
-async def get_device_info(host: str) -> Dict[str, str]:
+async def get_device_info(ip: str) -> Dict[str, str]:
     """
     Возвращает данные о вендоре, моделе, категории
     и ip адресе устройства
     
-    :param host: IP адрес устройства с включенным SNMP
-    :type host: str
+    :param ip: IP адрес устройства с включенным SNMP
+    :type ip: str
     
     :returns: Словарь с полями вендор, модель, категория и адрес
     :rtype: Dict[str, str]
     """
-    sys_object_id = await get_system_object_id(host)
+    sys_object_id = await get_system_object_id(ip)
     if sys_object_id in MKT_SYS_OBJECT_IDS:
         if sys_object_id == MKT_SYS_OBJECT_IDS[0]:
             # RouterOS устройство
             # Маршрутизаторы MikroTik отдают SYS_DESCR в формате
             # 'RouterOS RB750GL'. Необходимо удалить начальное RouterOS.
-            sys_descr = await get_system_description(host)
+            sys_descr = await get_system_description(ip)
             model = ''.join(sys_descr.split()[1::])
             category = 'Router'
         elif sys_object_id == MKT_SYS_OBJECT_IDS[1]:
             # SwOS устройство
             # Коммутаторы MikroTik отдают SYS_DESCR в формате
             # 'RB260GS'. Оставляем как есть.
-            model = get_system_description(host)
+            model = get_system_description(ip)
             category = 'Switch'
         return {
             'vendor': 'MikroTik',
             'model': model,
             'category': category,
-            'host': host
+            'host': ip
         }
     else:
         try:
@@ -144,7 +144,7 @@ async def get_device_info(host: str) -> Dict[str, str]:
                 sys_object_ids = json.load(file)
             if sys_object_id in sys_object_ids.keys():
                 result = sys_object_ids[sys_object_id]
-                result['host'] = host
+                result['host'] = ip
                 return result
         except Exception as err:
             print(err)
@@ -152,5 +152,5 @@ async def get_device_info(host: str) -> Dict[str, str]:
         'vendor': 'Unknown',
         'model': 'Unknown',
         'category': 'Unknown',
-        'host': host
+        'host': ip
     }
