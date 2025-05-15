@@ -67,6 +67,13 @@ def insert_db(result: dict):
 def del_db_data(result):
     sql_query_del ='DELETE FROM Device WHERE host=?'
     for i in result:
-        print(i)
         db_request(sql_query_del, (i, ))
-        
+
+def get_all_rows():
+    sql_query='SELECT * FROM Device'
+    return make_db_request(sql_query)
+
+def get_row(row):
+    sql_query= f'SELECT * from Device where {row[0]} = {row[1]}'
+    return make_db_request(sql_query)
+
