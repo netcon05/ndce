@@ -5,7 +5,7 @@ DB_NAME = 'ndce/ndce.db'
 SOCKET_TIMEOUT = 1
 
 SNMP_PORT = 161
-SNMP_COMMUNITY = 'зublic'
+SNMP_COMMUNITY = 'public'
 SNMP_TIMEOUT = 5
 SNMP_RETRIES = 2
 
