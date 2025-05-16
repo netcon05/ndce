@@ -5,7 +5,13 @@ from ndce.net import tcp_port_is_open
 
 class Telnet:
     # Инициализация параметров для соединения 1
-    def __init__(self, ip, login: str = 'admin', password: str = 'admin', commands: list = ""):
+    def __init__(
+        self,
+        ip,
+        login: str = 'admin',
+        password: str = 'admin',
+        commands: list = ""
+    ):
         self.username = login
         self.password = password
         self.ip = ip
@@ -35,7 +41,9 @@ class Telnet:
     async def cli_connect(self) -> None:
         print(f'Подключения к IP-адресу : {self.ip}...')
         if tcp_port_is_open(self.ip, 23):
-            reader, writer = await telnetlib3.open_connection(self.ip, 23,  shell=self.shell)
+            reader, writer = await telnetlib3.open_connection(
+                self.ip, 23,  shell=self.shell
+            )
             await writer.protocol.waiter_closed
         else:
             print(f'Соединение не установлено к IP-адресу : {self.ip}...')

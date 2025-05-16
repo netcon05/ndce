@@ -2,14 +2,11 @@ APP_TITLE = 'NDCE : Network Device Configuration Editor'
 
 DB_NAME = 'ndce/ndce.db'
 
-PING_TIMEOUT = 1
-PING_RETRIES = 2
-
 SOCKET_TIMEOUT = 1
 
 SNMP_PORT = 161
-SNMP_COMMUNITY = 'public'
-SNMP_TIMEOUT = 5
+SNMP_COMMUNITY = 'iMAXPublic'
+SNMP_TIMEOUT = 1
 SNMP_RETRIES = 2
 
 SNMP_SYS_NAME = '1.3.6.1.2.1.1.5.0'
