@@ -182,3 +182,6 @@ ndce/ndce.db
 
 # NiceGUI app storage folder
 .nicegui/
+
+# VSCode
+.vscode/

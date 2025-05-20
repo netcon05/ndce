@@ -1,11 +1,11 @@
 import aiosnmp
-from typing import Optional, Dict, Any
+from typing import Dict, Optional, Any
 import json
 from config import (
-    SNMP_PORT,
-    SNMP_COMMUNITY,
     SNMP_TIMEOUT,
     SNMP_RETRIES,
+    SNMP_PORT,
+    SNMP_COMMUNITY,
     SNMP_SYS_NAME,
     SNMP_SYS_DESCR,
     SNMP_SYS_OBJECT_ID,
@@ -22,31 +22,6 @@ async def get_snmp_value(
     timeout: Optional[int|float] = SNMP_TIMEOUT,
     retries: Optional[int] = SNMP_RETRIES
 ) -> Any:
-    """
-    Подключается к заданному хосту по протоколу SNMP и
-    получает данные в соответствии с указанным OID
-    
-    :param oid: SNMP OID
-    :type oid: str
-    
-    :param ip: IP адрес устройства с включенным SNMP
-    :type ip: str
-    
-    :param port: SNMP порт
-    :type port: int
-    
-    :param community: SNMP комьюнити только для чтения
-    :type community: str
-    
-    :param timeout: SNMP таймаут
-    :type timeout: Optional[int|float]
-    
-    :param retries: Количество попыток для SNMP
-    :type retries: Optional[int]
-
-    :returns: Полученные данные
-    :rtype: Any
-    """
     async with aiosnmp.Snmp(
         host=ip,
         port=port,
@@ -65,89 +40,54 @@ async def get_snmp_value(
 
 
 async def get_system_name(ip: str) -> str:
-    """
-    Возвращает sys_name
-    
-    :param ip: IP адрес устройства с включенным SNMP
-    :type ip: str
-    
-    :returns: sys_name устройства
-    :rtype: str
-    """
     result = await get_snmp_value(SNMP_SYS_NAME, ip)
     return result
 
 
 async def get_system_description(ip: str) -> str:
-    """
-    Возвращает sys_descr
-    
-    :param ip: IP адрес устройства с включенным SNMP
-    :type hoipst: str
-    
-    :returns: sys_descr устройства
-    :rtype: str
-    """
     result = await get_snmp_value(SNMP_SYS_DESCR, ip)
     return result
 
 
 async def get_system_object_id(ip: str) -> str:
-    """
-    Возвращает sys_object_id в формате OID
-    
-    :param ip: IP адрес устройства с включенным SNMP
-    :type ip: str
-    
-    :returns: OID sys_object_id устройства
-    :rtype: str
-    """
     result = await get_snmp_value(SNMP_SYS_OBJECT_ID, ip)
     return result
 
 
 async def get_device_info(ip: str) -> Dict[str, str]:
-    """
-    Возвращает данные о вендоре, моделе, категории
-    и ip адресе устройства
-    
-    :param ip: IP адрес устройства с включенным SNMP
-    :type ip: str
-    
-    :returns: Словарь с полями вендор, модель, категория и адрес
-    :rtype: Dict[str, str]
-    """
     sys_object_id = await get_system_object_id(ip)
-    if sys_object_id in MKT_SYS_OBJECT_IDS:
-        if sys_object_id == MKT_SYS_OBJECT_IDS[0]:
-            # RouterOS устройство
-            # Маршрутизаторы MikroTik отдают SYS_DESCR в формате
-            # 'RouterOS RB750GL'. Необходимо удалить начальное RouterOS.
+    if sys_object_id:
+        if sys_object_id in MKT_SYS_OBJECT_IDS:
             sys_descr = await get_system_description(ip)
-            model = ''.join(sys_descr.split()[1::])
-            category = 'Router'
-        elif sys_object_id == MKT_SYS_OBJECT_IDS[1]:
-            # SwOS устройство
-            # Коммутаторы MikroTik отдают SYS_DESCR в формате
-            # 'RB260GS'. Оставляем как есть.
-            model = get_system_description(ip)
-            category = 'Switch'
-        return {
-            'vendor': 'MikroTik',
-            'model': model,
-            'category': category,
-            'host': ip
-        }
-    else:
-        try:
-            with open(SYS_OBJECT_IDS_DB) as file:
-                sys_object_ids = json.load(file)
-            if sys_object_id in sys_object_ids.keys():
-                result = sys_object_ids[sys_object_id]
-                result['host'] = ip
-                return result
-        except Exception as err:
-            print(err)
+            if sys_descr:
+                if sys_object_id == MKT_SYS_OBJECT_IDS[0]:
+                    # RouterOS устройство
+                    # Маршрутизаторы MikroTik отдают SYS_DESCR в формате
+                    # 'RouterOS RB750GL'. Необходимо удалить начальное RouterOS.
+                    model = ''.join(sys_descr.split()[1::])
+                    category = 'Router'
+                elif sys_object_id == MKT_SYS_OBJECT_IDS[1]:
+                    # SwOS устройство
+                    # Коммутаторы MikroTik отдают SYS_DESCR в формате
+                    # 'RB260GS'. Оставляем как есть.
+                    model = sys_descr
+                    category = 'Switch'
+                return {
+                    'vendor': 'MikroTik',
+                    'model': model,
+                    'category': category,
+                    'host': ip
+                }
+        else:
+            try:
+                with open(SYS_OBJECT_IDS_DB) as file:
+                    sys_object_ids = json.load(file)
+                if sys_object_id in sys_object_ids.keys():
+                    result = sys_object_ids[sys_object_id]
+                    result['host'] = ip
+                    return result
+            except Exception as err:
+                print(err)
     return {
         'vendor': 'Unknown',
         'model': 'Unknown',

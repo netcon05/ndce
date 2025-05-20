@@ -1,4 +1,5 @@
-from typing import Dict, Any, List
+from typing import Dict, List
+import asyncio
 from nicegui import ui, app
 from ndce.snmp import (
     get_device_info,
@@ -10,10 +11,12 @@ from ndce.net import (
     get_hosts_from_subnet,
     is_ip_subnet
 )
+from ndce.telnet import Telnet
 from config import (
     APP_TITLE,
     COLUMNS_SETTINGS,
-    COLUMNS_DEFAULTS
+    COLUMNS_DEFAULTS,
+    MAX_CONCURRENT
 )
 
 
@@ -27,6 +30,17 @@ def load_db() -> None:
     rows.clear()
     for device in app.storage.general.setdefault('db', []):
         add_device(device)
+    update_ui()
+
+
+def add_device(device: Dict[str, str]) -> None:
+    rows.append(device)
+    if not device['category'] in categories:
+        categories.append(device['category'])
+    if not device['vendor'] in vendors:
+        vendors.append(device['vendor'])
+    if not device['model'] in models:
+        models.append(device['model'])
 
 
 def update_ui() -> None:
@@ -45,16 +59,6 @@ def clear_db() -> None:
     update_ui()
 
 
-def add_device(device: Dict[str, str]) -> None:
-    rows.append(device)
-    if not device['category'] in categories:
-        categories.append(device['category'])
-    if not device['vendor'] in vendors:
-        vendors.append(device['vendor'])
-    if not device['model'] in models:
-        models.append(device['model'])
-
-
 def get_devices_count() -> int:
     return len(app.storage.general.setdefault('db', []))
 
@@ -68,11 +72,6 @@ def apply_filter() -> None:
     table.update()
 
 
-def reset_filter() -> None:
-    for filter in filters.descendants():
-        filter.set_value('')
-
-
 def filter_devices(device: Dict[str, str]) -> List[Dict[str, str]]:
     result = True
     if categories_list.value:
@@ -84,63 +83,17 @@ def filter_devices(device: Dict[str, str]) -> List[Dict[str, str]]:
     return result
 
 
-async def get_row_data(host: str) -> Dict[str, Any]:
-    row = {}
-    hostname = await get_system_name(host)
-    if hostname:
-        device = await get_device_info(host)
-        telnet = telnet_is_enabled(host)
-        ssh = ssh_is_enabled(host)
-        row = {
-            'address': device['host'],
-            'hostname': hostname,
-            'vendor': device['vendor'],
-            'model': device['model'],
-            'category': device['category'],
-            'snmp': True,
-            'telnet': telnet,
-            'ssh': ssh
-        }
-    return row
+def reset_filter() -> None:
+    for filter in filters.descendants():
+        filter.set_value('')
 
 
-async def discover_devices(subnet: str) -> None:
-    clear_db()
-    status_label.set_text('Идет опрос устройств')
-    table.props(add='loading')
-    status.set_visibility(True)
-    hosts = get_hosts_from_subnet(subnet)
-    for host in hosts:
-        row = await get_row_data(host)
-        if row:
-            app.storage.general.setdefault('db', []).append(row)
-            add_device(row)
-            update_ui()
-    status.set_visibility(False)
-    table.props(remove='loading')
-    ui.notify(
-        message=f'Обнаружено {get_devices_count()} устройств',
-        position='top',
-        type='positive'
-    )
-
-
-async def show_search_dialog() -> ui.dialog:
-    async def get_subnet():
-        if is_ip_subnet(subnet.value):
-            search_dialog.close()
-            await discover_devices(subnet.value)
-        else:
-            ui.notify(
-                message='Введите адрес подсети в правильном формате.',
-                position='top',
-                type='negative'
-            )
-    with ui.dialog(value=True) as search_dialog, ui.card().props('square'):
+def show_discover_dialog() -> ui.dialog:
+    with ui.dialog(value=True) as discover_dialog, ui.card().props('square'):
         title = ui.label('Обнаружение устройств')
         title.classes(
             '''
-            w-full bg-primary text-base text-center 
+            w-full bg-primary text-base text-center
             text-white py-2 absolute left-0 top-0
             '''
         )
@@ -150,12 +103,63 @@ async def show_search_dialog() -> ui.dialog:
         with ui.row().classes('w-full justify-between'):
             ui.button(
                 'Начать',
-                on_click=get_subnet
+                on_click=lambda: get_subnet(discover_dialog, subnet.value)
             ).classes('w-24').props('square')
             ui.button(
                 'Отмена',
-                on_click=search_dialog.close
+                on_click=discover_dialog.close
             ).classes('w-24').props('square')
+
+
+async def get_subnet(dialog: ui.dialog, subnet: str) -> None:
+    if is_ip_subnet(subnet):
+        dialog.close()
+        clear_db()
+        status_label.set_text('Идет опрос устройств')
+        table.props(add='loading')
+        status.set_visibility(True)
+        hosts = get_hosts_from_subnet(subnet)
+        semaphore = asyncio.Semaphore(MAX_CONCURRENT)
+        tasks = [
+            asyncio.create_task(discover_device(host, semaphore))
+            for host in hosts
+        ]
+        await asyncio.gather(*tasks)
+        status.set_visibility(False)
+        table.props(remove='loading')
+        ui.notify(
+            message=f'Обнаружено {get_devices_count()} устройств',
+            position='top',
+            type='positive'
+        )
+    else:
+        ui.notify(
+            message='Введите адрес подсети',
+            position='top',
+            type='warning'
+        )
+
+
+async def discover_device(ip: str, semaphore) -> None:
+    async with semaphore:
+        hostname = await get_system_name(ip)
+        if hostname:
+            device = await get_device_info(ip)
+            telnet = telnet_is_enabled(ip)
+            ssh = ssh_is_enabled(ip)
+            row = {
+                'address': device['host'],
+                'hostname': hostname,
+                'vendor': device['vendor'],
+                'model': device['model'],
+                'category': device['category'],
+                'snmp': True,
+                'telnet': telnet,
+                'ssh': ssh
+            }
+            app.storage.general.setdefault('db', []).append(row)
+            add_device(row)
+            update_ui()
 
 
 def show_configure_dialog() -> ui.dialog:
@@ -164,7 +168,7 @@ def show_configure_dialog() -> ui.dialog:
             title = ui.label('Конфигурирование устройств')
             title.classes(
                 '''
-                w-full bg-primary text-base text-center 
+                w-full bg-primary text-base text-center
                 text-white py-2 absolute left-0 top-0
                 '''
             )
@@ -172,16 +176,53 @@ def show_configure_dialog() -> ui.dialog:
                 label='Список команд',
                 placeholder='Вводите по одной команде на строку'
             ).classes('w-full mt-10').props(
-                'square autofocus standout autogrow outlined input-class=max-h-64'
+                '''
+                square autofocus standout autogrow
+                outlined input-class=max-h-64
+                '''
             )
             with ui.row().classes('w-full justify-between'):
                 ui.button(
-                    'Начать'
+                    'Начать',
+                    on_click=lambda: get_commands(
+                        configure_dialog, commands.value
+                    )
                 ).classes('w-24').props('square')
                 ui.button(
                     'Отмена',
                     on_click=configure_dialog.close
                 ).classes('w-24').props('square')
+
+
+async def get_commands(dialog: ui.dialog, value: str) -> None:
+    if value:
+        dialog.close()
+        await send_commands(value)
+    else:
+        ui.notify(
+            message='Введите команды для выполнения',
+            position='top',
+            type='warning'
+        )
+
+
+async def send_commands(value: str) -> None:
+    ips = [device['address'] for device in table.selected]
+    commands = [f'{command}\n' for command in value.split('\n')]
+    tasks = [
+        Telnet(ip=ip, commands=commands).cli_connect() for ip in ips
+    ]
+    status_label.set_text('Идет передача комманд')
+    table.props(add='loading')
+    status.set_visibility(True)
+    await asyncio.gather(*tasks)
+    status.set_visibility(False)
+    table.props(remove='loading')
+    ui.notify(
+        message=f'Передано {len(commands)} команд на {len(ips)} устройств',
+        position='top',
+        type='positive'
+    )
 
 
 # GUI RENDERING
@@ -198,14 +239,22 @@ with ui.header().classes('items-center py-2'):
         btn_configure.tooltip('Очистка БД')
     with ui.button(
         icon = 'tune',
-        on_click=show_configure_dialog
+        on_click=lambda: (
+            show_configure_dialog()
+            if len(table.selected) > 0
+            else ui.notify(
+                message='Выберите устройства',
+                position='top',
+                type='warning'
+            )
+        )
     ) as btn_configure:
         btn_configure.props('flat square')
         btn_configure.classes('text-white px-2')
         btn_configure.tooltip('Конфигурирование')
     with ui.button(
         icon = 'search',
-        on_click=show_search_dialog
+        on_click=show_discover_dialog
     ) as btn_subnet:
         btn_subnet.props('flat square')
         btn_subnet.classes('text-white px-2')
@@ -217,17 +266,17 @@ with ui.right_drawer(fixed = True, value = True).props('bordered'):
             categories,
             on_change=apply_filter,
             label = 'Категория'
-        ).classes('w-full').props('outlined dense square')
+        ).classes('w-full').props('outlined dense square clearable')
         vendors_list = ui.select(
             vendors,
             on_change=apply_filter,
             label = 'Производитель'
-        ).classes('w-full').props('outlined dense square')
+        ).classes('w-full').props('outlined dense square clearable')
         models_list = ui.select(
             models,
             on_change=apply_filter,
             label = 'Модель'
-        ).classes('w-full').props('outlined dense square')
+        ).classes('w-full').props('outlined dense square clearable')
     ui.space()
     with ui.column().classes(
         'w-full items-center'
