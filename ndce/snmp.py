@@ -2,10 +2,11 @@ import aiosnmp
 from typing import Dict, Optional, Any
 import json
 from config import (
-    SNMP_TIMEOUT,
-    SNMP_RETRIES,
     SNMP_PORT,
     SNMP_COMMUNITY,
+    SNMP_TIMEOUT,
+    SNMP_RETRIES,
+    SNMP_IF_NUMBER,
     SNMP_SYS_NAME,
     SNMP_SYS_DESCR,
     SNMP_SYS_OBJECT_ID,
@@ -19,24 +20,29 @@ async def get_snmp_value(
     ip: str,
     port: Optional[int] = SNMP_PORT,
     community: Optional[str] = SNMP_COMMUNITY,
-    timeout: Optional[int|float] = SNMP_TIMEOUT,
+    timeout: Optional[int] = SNMP_TIMEOUT,
     retries: Optional[int] = SNMP_RETRIES
 ) -> Any:
-    async with aiosnmp.Snmp(
-        host=ip,
-        port=port,
-        community=community,
-        timeout=timeout,
-        retries=retries
-    ) as snmp:
-        try:
-            result = await snmp.get(oid)
-            if isinstance(result[0].value, bytes):
-                return result[0].value.decode('utf-8')
-            return str(result[0].value)
-        except Exception as err:
-            print(err)
-            return ''
+    try:
+        async with aiosnmp.Snmp(
+            host=ip,
+            port=port,
+            community=community,
+            timeout=timeout,
+            retries=retries,
+            validate_source_addr=False
+        ) as snmp:
+                result = await snmp.get(oid)
+                if isinstance(result[0].value, bytes):
+                    return result[0].value.decode('utf-8')
+                return str(result[0].value)
+    except:
+        return ''
+
+
+async def get_ports_count(ip: str) -> int:
+    result = await get_snmp_value(SNMP_IF_NUMBER, ip)
+    return result
 
 
 async def get_system_name(ip: str) -> str:

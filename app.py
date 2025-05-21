@@ -1,7 +1,10 @@
 from typing import Dict, List
+import time
+import math
 import asyncio
 from nicegui import ui, app
 from ndce.snmp import (
+    get_ports_count,
     get_device_info,
     get_system_name
 )
@@ -113,22 +116,28 @@ def show_discover_dialog() -> ui.dialog:
 
 async def get_subnet(dialog: ui.dialog, subnet: str) -> None:
     if is_ip_subnet(subnet):
+        start_time = time.time()
         dialog.close()
         clear_db()
-        status_label.set_text('Идет опрос устройств')
-        table.props(add='loading')
+        status_label.set_text('Проверка доступности устройств')
         status.set_visibility(True)
+        table.props(add='loading')
         hosts = get_hosts_from_subnet(subnet)
         semaphore = asyncio.Semaphore(MAX_CONCURRENT)
         tasks = [
-            asyncio.create_task(discover_device(host, semaphore))
+            discover_device(host, semaphore)
             for host in hosts
         ]
         await asyncio.gather(*tasks)
-        status.set_visibility(False)
         table.props(remove='loading')
+        status.set_visibility(False)
+        end_time = time.time()
+        total_time = end_time - start_time
         ui.notify(
-            message=f'Обнаружено {get_devices_count()} устройств',
+            message=f'''
+                Обнаружено {get_devices_count()} 
+                устройств за {math.ceil(total_time)} секунд.
+            ''',
             position='top',
             type='positive'
         )
@@ -142,25 +151,25 @@ async def get_subnet(dialog: ui.dialog, subnet: str) -> None:
 
 async def discover_device(ip: str, semaphore) -> None:
     async with semaphore:
-        hostname = await get_system_name(ip)
-        if not hostname:
-            hostname = 'Unknown'
-        device = await get_device_info(ip)
-        telnet = telnet_is_enabled(ip)
-        ssh = ssh_is_enabled(ip)
-        row = {
-            'address': device['host'],
-            'hostname': hostname,
-            'vendor': device['vendor'],
-            'model': device['model'],
-            'category': device['category'],
-            'snmp': True,
-            'telnet': telnet,
-            'ssh': ssh
-        }
-        app.storage.general.setdefault('db', []).append(row)
-        add_device(row)
-        update_ui()
+        ports_count = await get_ports_count(ip)
+        if ports_count:
+            hostname = await get_system_name(ip)
+            device = await get_device_info(ip)
+            telnet = telnet_is_enabled(ip)
+            ssh = ssh_is_enabled(ip)
+            row = {
+                'address': device['host'],
+                'hostname': hostname,
+                'vendor': device['vendor'],
+                'model': device['model'],
+                'category': device['category'],
+                'snmp': True,
+                'telnet': telnet,
+                'ssh': ssh
+            }
+            app.storage.general.setdefault('db', []).append(row)
+            add_device(row)
+            update_ui()
 
 
 def show_configure_dialog() -> ui.dialog:
@@ -319,4 +328,4 @@ with ui.table(
 
 if __name__ in {'__main__', '__mp_main__'}:
     load_db()
-    ui.run(title=APP_TITLE)
+    ui.run(title=APP_TITLE, port=8888)
