@@ -143,23 +143,24 @@ async def get_subnet(dialog: ui.dialog, subnet: str) -> None:
 async def discover_device(ip: str, semaphore) -> None:
     async with semaphore:
         hostname = await get_system_name(ip)
-        if hostname:
-            device = await get_device_info(ip)
-            telnet = telnet_is_enabled(ip)
-            ssh = ssh_is_enabled(ip)
-            row = {
-                'address': device['host'],
-                'hostname': hostname,
-                'vendor': device['vendor'],
-                'model': device['model'],
-                'category': device['category'],
-                'snmp': True,
-                'telnet': telnet,
-                'ssh': ssh
-            }
-            app.storage.general.setdefault('db', []).append(row)
-            add_device(row)
-            update_ui()
+        if not hostname:
+            hostname = 'Unknown'
+        device = await get_device_info(ip)
+        telnet = telnet_is_enabled(ip)
+        ssh = ssh_is_enabled(ip)
+        row = {
+            'address': device['host'],
+            'hostname': hostname,
+            'vendor': device['vendor'],
+            'model': device['model'],
+            'category': device['category'],
+            'snmp': True,
+            'telnet': telnet,
+            'ssh': ssh
+        }
+        app.storage.general.setdefault('db', []).append(row)
+        add_device(row)
+        update_ui()
 
 
 def show_configure_dialog() -> ui.dialog:
