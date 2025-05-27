@@ -93,10 +93,15 @@ def show_discover_dialog() -> ui.dialog:
         subnet = ui.input(
             label='Подсеть'
         ).classes('w-full mt-10').props('square autofocus outlined clearable')
+        clear_db_switch = ui.switch('Очистить базу данных', value=True)
         with ui.row().classes('w-full justify-between'):
             ui.button(
                 'Начать',
-                on_click=lambda: get_subnet(discover_dialog, subnet.value)
+                on_click=lambda: get_subnet(
+                    discover_dialog,
+                    subnet.value,
+                    clear_db_switch.value
+                )
             ).classes('w-24').props('square')
             ui.button(
                 'Отмена',
@@ -104,11 +109,11 @@ def show_discover_dialog() -> ui.dialog:
             ).classes('w-24').props('square')
 
 
-async def get_subnet(dialog: ui.dialog, subnet: str) -> None:
+async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
     if is_ip_subnet(subnet):
         start_time = time.time()
         dialog.close()
-        clear_db()
+        if clear: clear_db()
         status_label.set_text('Проверка доступности устройств')
         status.set_visibility(True)
         table.props(add='loading')
