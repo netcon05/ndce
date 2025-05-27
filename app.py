@@ -227,6 +227,8 @@ async def send_commands(value: str) -> None:
 
 
 if __name__ in {'__main__', '__mp_main__'}:
+    ui.run(title=APP_TITLE, port=8888, reconnect_timeout=60)
+    
     ids = {}
     rows = []
     categories = []
@@ -237,7 +239,11 @@ if __name__ in {'__main__', '__mp_main__'}:
         with open(SYS_OBJECT_IDS_DB) as file:
             ids = json.load(file)
     except:
-        pass
+        ui.notify(
+            message='База идентификаторов сетевых устройств не обнаружена',
+            position='top',
+            type='warning'
+        )
 
     # GUI RENDERING
     # Header section
@@ -346,4 +352,3 @@ if __name__ in {'__main__', '__mp_main__'}:
     for device in app.storage.general.setdefault('db', []):
         add_device(device)
     update_ui()
-    ui.run(title=APP_TITLE, port=8888, reconnect_timeout=60)
