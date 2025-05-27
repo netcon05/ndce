@@ -1,3 +1,4 @@
+aioping
 aiosnmp
 nicegui
 telnetlib3

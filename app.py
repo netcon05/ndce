@@ -1,4 +1,3 @@
-from socket import timeout
 from typing import Dict, List
 import json
 import time
@@ -23,7 +22,6 @@ from config import (
     
 
 def add_device(device: Dict[str, str]) -> None:
-    global rows, categories, vendors, models
     rows.append(device)
     if not device['category'] in categories:
         categories.append(device['category'])
@@ -116,7 +114,6 @@ async def get_subnet(dialog: ui.dialog, subnet: str) -> None:
         table.props(add='loading')
         hosts = get_hosts_from_subnet(subnet)
         semaphore = asyncio.Semaphore(MAX_CONCURRENT)
-        # accesable_hosts = await get_accesable_hosts(hosts)
         tasks = [
             asyncio.create_task(discover_device(host, semaphore))
             for host in hosts
@@ -149,6 +146,7 @@ async def discover_device(host: str, semaphore: asyncio.Semaphore) -> None:
         ssh = ssh_is_enabled(host)
         row = {
             'address': device['host'],
+            'sysobjectid': device['sysobjectid'],
             'hostname': device['hostname'],
             'vendor': device['vendor'],
             'model': device['model'],

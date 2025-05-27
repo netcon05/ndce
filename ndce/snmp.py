@@ -25,8 +25,8 @@ async def get_snmp_values(
 ) -> Any:
     async with semaphore:
         values = []
-        host_is_accessable = await ping_host(host)
-        if host_is_accessable:
+        host_is_up = await ping_host(host)
+        if host_is_up:
             try:
                 async with aiosnmp.Snmp(
                     host=host,
@@ -37,7 +37,6 @@ async def get_snmp_values(
                     validate_source_addr=False
                 ) as snmp:
                     results = await snmp.get(oids)
-                    values = []
                     for result in results:
                         if isinstance(result.value, bytes):
                             values.append(result.value.decode('utf-8'))
@@ -76,6 +75,7 @@ async def get_device_info(
                         category = 'Switch'
                     return {
                         'host': host,
+                        'sysobjectid': objectid,
                         'hostname': hostname,
                         'vendor': 'MikroTik',
                         'model': model,
@@ -85,5 +85,6 @@ async def get_device_info(
                 if objectid in ids.keys():
                     result = ids[objectid]
                     result['host'] = host
+                    result['sysobjectid'] = objectid
                     result['hostname'] = hostname
                     return result

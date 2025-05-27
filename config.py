@@ -37,6 +37,13 @@ COLUMNS_SETTINGS = [
         'required': True
     },
     {
+        'name': 'sysobjectid',
+        'label': 'SysObjID',
+        'field': 'sysobjectid',
+        'sortable': False,
+        'required': True
+    },
+    {
         'name': 'hostname',
         'label': 'Имя',
         'field': 'hostname',
