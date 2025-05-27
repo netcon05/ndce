@@ -73,6 +73,14 @@ def filter_devices(device: Dict[str, str]) -> List[Dict[str, str]]:
         result &= device['vendor'] == vendors_list.value
     if models_list.value:
         result &= device['model'] == models_list.value
+    if telnet_switch.value and ssh_switch.value:
+        result &= device['telnet'] or device['ssh']
+    elif telnet_switch.value:
+        result &= device['telnet']
+    elif ssh_switch.value:
+        result &= device['ssh']
+    else:
+        result &= not device['telnet'] and not device['ssh']
     return result
 
 
@@ -297,6 +305,16 @@ if __name__ in {'__main__', '__mp_main__'}:
                 on_change=apply_filter,
                 label = 'Модель'
             ).classes('w-full').props('outlined dense square clearable')
+            telnet_switch = ui.switch(
+                'Протокол Telnet',
+                value=True,
+                on_change=apply_filter
+            )
+            ssh_switch = ui.switch(
+                'Протокол Ssh',
+                value=True,
+                on_change=apply_filter
+            )
         ui.space()
         with ui.column().classes(
             'w-full items-center'
