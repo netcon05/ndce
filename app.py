@@ -1,13 +1,11 @@
+from socket import timeout
 from typing import Dict, List
+import json
 import time
 import math
 import asyncio
 from nicegui import ui, app
-from ndce.snmp import (
-    get_ports_count,
-    get_device_info,
-    get_system_name
-)
+from ndce.snmp import get_device_info
 from ndce.net import (
     telnet_is_enabled,
     ssh_is_enabled,
@@ -17,26 +15,15 @@ from ndce.net import (
 from ndce.telnet import Telnet
 from config import (
     APP_TITLE,
+    SYS_OBJECT_IDS_DB,
+    MAX_CONCURRENT,
     COLUMNS_SETTINGS,
-    COLUMNS_DEFAULTS,
-    MAX_CONCURRENT
+    COLUMNS_DEFAULTS
 )
-
-
-rows = []
-categories = []
-vendors = []
-models = []
-
-
-def load_db() -> None:
-    rows.clear()
-    for device in app.storage.general.setdefault('db', []):
-        add_device(device)
-    update_ui()
-
+    
 
 def add_device(device: Dict[str, str]) -> None:
+    global rows, categories, vendors, models
     rows.append(device)
     if not device['category'] in categories:
         categories.append(device['category'])
@@ -44,6 +31,7 @@ def add_device(device: Dict[str, str]) -> None:
         vendors.append(device['vendor'])
     if not device['model'] in models:
         models.append(device['model'])
+    update_ui()
 
 
 def update_ui() -> None:
@@ -51,6 +39,10 @@ def update_ui() -> None:
     categories_list.update()
     vendors_list.update()
     models_list.update()
+    total_devices.set_text(get_devices_count())
+    total_categories.set_text(len(categories))
+    total_vendors.set_text(len(vendors))
+    total_models.set_text(len(models))
 
 
 def clear_db() -> None:
@@ -124,8 +116,9 @@ async def get_subnet(dialog: ui.dialog, subnet: str) -> None:
         table.props(add='loading')
         hosts = get_hosts_from_subnet(subnet)
         semaphore = asyncio.Semaphore(MAX_CONCURRENT)
+        # accesable_hosts = await get_accesable_hosts(hosts)
         tasks = [
-            discover_device(host, semaphore)
+            asyncio.create_task(discover_device(host, semaphore))
             for host in hosts
         ]
         await asyncio.gather(*tasks)
@@ -149,27 +142,22 @@ async def get_subnet(dialog: ui.dialog, subnet: str) -> None:
         )
 
 
-async def discover_device(ip: str, semaphore) -> None:
-    async with semaphore:
-        ports_count = await get_ports_count(ip)
-        if ports_count:
-            hostname = await get_system_name(ip)
-            device = await get_device_info(ip)
-            telnet = telnet_is_enabled(ip)
-            ssh = ssh_is_enabled(ip)
-            row = {
-                'address': device['host'],
-                'hostname': hostname,
-                'vendor': device['vendor'],
-                'model': device['model'],
-                'category': device['category'],
-                'snmp': True,
-                'telnet': telnet,
-                'ssh': ssh
-            }
-            app.storage.general.setdefault('db', []).append(row)
-            add_device(row)
-            update_ui()
+async def discover_device(host: str, semaphore: asyncio.Semaphore) -> None:
+    device = await get_device_info(host, semaphore, ids)
+    if device:
+        telnet = telnet_is_enabled(host)
+        ssh = ssh_is_enabled(host)
+        row = {
+            'address': device['host'],
+            'hostname': device['hostname'],
+            'vendor': device['vendor'],
+            'model': device['model'],
+            'category': device['category'],
+            'telnet': telnet,
+            'ssh': ssh
+        }
+        app.storage.general.setdefault('db', []).append(row)
+        add_device(row)
 
 
 def show_configure_dialog() -> ui.dialog:
@@ -235,97 +223,124 @@ async def send_commands(value: str) -> None:
     )
 
 
-# GUI RENDERING
-# Header section
-with ui.header().classes('items-center py-2'):
-    ui.label(APP_TITLE).classes('text-lg')
-    ui.space()
-    with ui.button(
-        icon = 'clear',
-        on_click=clear_db
-    ) as btn_configure:
-        btn_configure.props('flat square')
-        btn_configure.classes('text-white px-2')
-        btn_configure.tooltip('Очистка БД')
-    with ui.button(
-        icon = 'tune',
-        on_click=lambda: (
-            show_configure_dialog()
-            if len(table.selected) > 0
-            else ui.notify(
-                message='Выберите устройства',
-                position='top',
-                type='warning'
-            )
-        )
-    ) as btn_configure:
-        btn_configure.props('flat square')
-        btn_configure.classes('text-white px-2')
-        btn_configure.tooltip('Конфигурирование')
-    with ui.button(
-        icon = 'search',
-        on_click=show_discover_dialog
-    ) as btn_subnet:
-        btn_subnet.props('flat square')
-        btn_subnet.classes('text-white px-2')
-        btn_subnet.tooltip('Обнаружение')
-# Right drawer section
-with ui.right_drawer(fixed = True, value = True).props('bordered'):
-    with ui.column().classes('w-full') as filters:
-        categories_list = ui.select(
-            categories,
-            on_change=apply_filter,
-            label = 'Категория'
-        ).classes('w-full').props('outlined dense square clearable')
-        vendors_list = ui.select(
-            vendors,
-            on_change=apply_filter,
-            label = 'Производитель'
-        ).classes('w-full').props('outlined dense square clearable')
-        models_list = ui.select(
-            models,
-            on_change=apply_filter,
-            label = 'Модель'
-        ).classes('w-full').props('outlined dense square clearable')
-    ui.space()
-    with ui.column().classes(
-        'w-full items-center'
-    ) as status:
-        status.set_visibility(False)
-        status_spinner = ui.spinner(type='tail', size='64px')
-        status_label = ui.label().classes('text-center')
-    ui.space()
-    ui.button(
-        'Сбросить фильтр',
-        on_click = reset_filter
-    ).classes('w-full').props('square')
-# Table section
-with ui.table(
-    rows = rows,
-    columns = COLUMNS_SETTINGS,
-    column_defaults = COLUMNS_DEFAULTS,
-    row_key = 'address',
-    selection = 'multiple'
-) as table:
-    table.classes('shadow-none border rounded-none w-full')
-    table.props('dense hide-selected-banner hide-no-data')
-    table.add_slot('body-cell-snmp', '''
-        <q-td key="snmp" :props="props">
-            <q-badge rounded :color="props.value == 0 ? 'red' : 'green'" />
-        </q-td>
-    ''')
-    table.add_slot('body-cell-telnet', '''
-        <q-td key="telnet" :props="props">
-            <q-badge rounded :color="props.value == 0 ? 'red' : 'green'" />
-        </q-td>
-    ''')
-    table.add_slot('body-cell-ssh', '''
-        <q-td key="ssh" :props="props">
-            <q-badge rounded :color="props.value == 0 ? 'red' : 'green'" />
-        </q-td>
-    ''')
-
-
 if __name__ in {'__main__', '__mp_main__'}:
-    load_db()
-    ui.run(title=APP_TITLE, port=8888)
+    ids = {}
+    rows = []
+    categories = []
+    vendors = []
+    models = []
+
+    try:
+        with open(SYS_OBJECT_IDS_DB) as file:
+            ids = json.load(file)
+    except:
+        pass
+
+    # GUI RENDERING
+    # Header section
+    with ui.header().classes('items-center py-2'):
+        ui.label(APP_TITLE).classes('text-lg')
+        ui.space()
+        with ui.button(
+            icon = 'clear',
+            on_click=clear_db
+        ) as btn_configure:
+            btn_configure.props('flat square')
+            btn_configure.classes('text-white px-2')
+            btn_configure.tooltip('Очистка БД')
+        with ui.button(
+            icon = 'tune',
+            on_click=lambda: (
+                show_configure_dialog()
+                if len(table.selected) > 0
+                else ui.notify(
+                    message='Выберите устройства',
+                    position='top',
+                    type='warning'
+                )
+            )
+        ) as btn_configure:
+            btn_configure.props('flat square')
+            btn_configure.classes('text-white px-2')
+            btn_configure.tooltip('Конфигурирование')
+        with ui.button(
+            icon = 'search',
+            on_click=show_discover_dialog
+        ) as btn_subnet:
+            btn_subnet.props('flat square')
+            btn_subnet.classes('text-white px-2')
+            btn_subnet.tooltip('Обнаружение')
+    # Right drawer section
+    with ui.right_drawer(fixed = True, value = True).props('bordered'):
+        with ui.column().classes('w-full') as filters:
+            categories_list = ui.select(
+                categories,
+                on_change=apply_filter,
+                label = 'Категория'
+            ).classes('w-full').props('outlined dense square clearable')
+            vendors_list = ui.select(
+                vendors,
+                on_change=apply_filter,
+                label = 'Производитель'
+            ).classes('w-full').props('outlined dense square clearable')
+            models_list = ui.select(
+                models,
+                on_change=apply_filter,
+                label = 'Модель'
+            ).classes('w-full').props('outlined dense square clearable')
+        ui.space()
+        with ui.column().classes(
+            'w-full items-center'
+        ) as status:
+            status.set_visibility(False)
+            status_spinner = ui.spinner(type='tail', size='64px')
+            status_label = ui.label().classes('text-center')
+        ui.space()
+        ui.button(
+            'Сбросить фильтр',
+            on_click = reset_filter
+        ).classes('w-full').props('square')
+    # Table section
+    with ui.table(
+        rows = rows,
+        columns = COLUMNS_SETTINGS,
+        column_defaults = COLUMNS_DEFAULTS,
+        row_key = 'address',
+        selection = 'multiple'
+    ) as table:
+        table.classes('shadow-none border rounded-none w-full')
+        table.props('dense hide-selected-banner hide-no-data')
+        table.add_slot('body-cell-snmp', '''
+            <q-td key="snmp" :props="props">
+                <q-badge rounded :color="props.value == 0 ? 'red' : 'green'" />
+            </q-td>
+        ''')
+        table.add_slot('body-cell-telnet', '''
+            <q-td key="telnet" :props="props">
+                <q-badge rounded :color="props.value == 0 ? 'red' : 'green'" />
+            </q-td>
+        ''')
+        table.add_slot('body-cell-ssh', '''
+            <q-td key="ssh" :props="props">
+                <q-badge rounded :color="props.value == 0 ? 'red' : 'green'" />
+            </q-td>
+        ''')
+    # Footer section
+    with ui.footer().classes('items-center py-2'):
+        ui.label('Устройств:')
+        total_devices = ui.label('0')
+        ui.separator().props('vertical')
+        ui.label('Категорий:')
+        total_categories = ui.label('0')
+        ui.separator().props('vertical')
+        ui.label('Производителей:')
+        total_vendors = ui.label('0')
+        ui.separator().props('vertical')
+        ui.label('Моделей:')
+        total_models = ui.label('0')
+        
+
+    for device in app.storage.general.setdefault('db', []):
+        add_device(device)
+    update_ui()
+    ui.run(title=APP_TITLE, port=8888, reconnect_timeout=60)
