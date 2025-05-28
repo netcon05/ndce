@@ -30,9 +30,9 @@ SYS_OBJECT_IDS_DB = 'ndce/ids.json'
 
 COLUMNS_SETTINGS = [
     {
-        'name': 'address',
+        'name': 'host',
         'label': 'Адрес',
-        'field': 'address',
+        'field': 'host',
         'sortable': True,
         'required': True
     },

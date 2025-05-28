@@ -3,6 +3,7 @@ import json
 import time
 import math
 import asyncio
+from urllib.parse import parse_qs
 from nicegui import ui, app
 from ndce.snmp import get_device_info
 from ndce.net import (
@@ -81,6 +82,19 @@ def clear_db() -> None:
     vendors.clear()
     models.clear()
     update_ui()
+
+
+def delete_devices():
+    if table.selected:
+        table.remove_rows(table.selected)
+        rows = table.rows
+        app.storage.general['db'] = rows
+    else:
+        ui.notify(
+            message='Выберите устройства',
+            position='top',
+            type='warning'
+        )
 
 
 def get_devices_count() -> int:
@@ -195,7 +209,7 @@ async def discover_device(host: str, semaphore: asyncio.Semaphore) -> None:
         telnet = telnet_is_enabled(host)
         ssh = ssh_is_enabled(host)
         row = {
-            'address': device['host'],
+            'host': device['host'],
             'sysobjectid': device['sysobjectid'],
             'hostname': device['hostname'],
             'vendor': device['vendor'],
@@ -253,7 +267,7 @@ async def get_commands(dialog: ui.dialog, value: str) -> None:
 
 
 async def send_commands(value: str) -> None:
-    ips = [device['address'] for device in table.selected]
+    ips = [device['host'] for device in table.selected]
     commands = [f'{command}\n' for command in value.split('\n')]
     tasks = [
         Telnet(ip=ip, commands=commands).cli_connect() for ip in ips
@@ -300,12 +314,20 @@ if __name__ in {'__main__', '__mp_main__'}:
         ui.label(APP_TITLE).classes('text-lg')
         ui.space()
         with ui.button(
+            icon = 'delete_outline',
+            on_click=delete_devices
+        ) as btn_delete_rows:
+            btn_delete_rows.props('flat square')
+            btn_delete_rows.classes('text-white px-2')
+            btn_delete_rows.tooltip('Удаление устройств')
+        with ui.button(
             icon = 'clear',
             on_click=clear_db
         ) as btn_clear_db:
             btn_clear_db.props('flat square')
             btn_clear_db.classes('text-white px-2')
             btn_clear_db.tooltip('Очистка БД')
+        ui.separator().props('vertical color="blue-11"')
         with ui.button(
             icon = 'tune',
             on_click=lambda: (
@@ -328,7 +350,7 @@ if __name__ in {'__main__', '__mp_main__'}:
             btn_discover.props('flat square')
             btn_discover.classes('text-white px-2')
             btn_discover.tooltip('Обнаружение')
-        ui.separator().props('vertical')
+        ui.separator().props('vertical color="blue-11"')
         with ui.button(
             icon = 'dark_mode',
             on_click=dark_mode
@@ -384,7 +406,7 @@ if __name__ in {'__main__', '__mp_main__'}:
         rows = rows,
         columns = COLUMNS_SETTINGS,
         column_defaults = COLUMNS_DEFAULTS,
-        row_key = 'address',
+        row_key = 'host',
         selection = 'multiple'
     ) as table:
         table.classes('shadow-none border rounded-none w-full')
@@ -408,13 +430,13 @@ if __name__ in {'__main__', '__mp_main__'}:
     with ui.footer().classes('items-center py-2'):
         ui.label('Устройств:')
         total_devices = ui.label('0')
-        ui.separator().props('vertical')
+        ui.separator().props('vertical color="blue-11"')
         ui.label('Категорий:')
         total_categories = ui.label('0')
-        ui.separator().props('vertical')
+        ui.separator().props('vertical color="blue-11"')
         ui.label('Производителей:')
         total_vendors = ui.label('0')
-        ui.separator().props('vertical')
+        ui.separator().props('vertical color="blue-11"')
         ui.label('Моделей:')
         total_models = ui.label('0')
         
