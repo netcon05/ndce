@@ -19,6 +19,37 @@ from config import (
     COLUMNS_SETTINGS,
     COLUMNS_DEFAULTS
 )
+
+
+def dark_mode(change: bool = True):
+    if change:
+        if dark.value:
+            dark.disable()
+        else:
+            dark.enable()
+        app.storage.general['dark_mode'] = dark.value
+    if not dark.value:
+        btn_mode.set_icon('dark_mode')
+        btn_mode.tooltip('Темный')
+        table.classes(add='border')
+        telnet_switch.classes(add='bg-gray-100')
+        ssh_switch.classes(add='bg-gray-100')
+        table.props(remove='separator="none"')
+        filter_drawer.props(add='bordered')
+        categories_list.props(add='outlined')
+        vendors_list.props(add='outlined')
+        models_list.props(add='outlined')
+    else:
+        btn_mode.set_icon('light_mode')
+        btn_mode.tooltip('Светлый')
+        table.classes(remove='border')
+        telnet_switch.classes(remove='bg-gray-100')
+        ssh_switch.classes(remove='bg-gray-100')
+        table.props(add='separator="none"')
+        filter_drawer.props(remove='bordered')
+        categories_list.props(remove='outlined')
+        vendors_list.props(remove='outlined')
+        models_list.props(remove='outlined')
     
 
 def add_device(device: Dict[str, str]) -> None:
@@ -53,14 +84,14 @@ def clear_db() -> None:
 
 
 def get_devices_count() -> int:
-    return len(app.storage.general.setdefault('db', []))
+    return len(app.storage.general.get('db', []))
 
 
 def apply_filter() -> None:
     rows.clear()
     rows.extend(list(filter(
         filter_devices,
-        app.storage.general.setdefault('db', [])
+        app.storage.general.get('db', [])
     )))
     table.update()
 
@@ -119,13 +150,15 @@ def show_discover_dialog() -> ui.dialog:
                 'Отмена',
                 on_click=discover_dialog.close
             ).classes('w-24').props('square')
+        if dark.value:
+            clear_db_switch.classes(remove='bg-gray-100')
 
 
 async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
     if is_ip_subnet(subnet):
         start_time = time.time()
-        dialog.close()
         if clear: clear_db()
+        dialog.close()
         status_label.set_text('Обнаружение доступных устройств')
         status.set_visibility(True)
         table.props(add='loading')
@@ -246,6 +279,10 @@ if __name__ in {'__main__', '__mp_main__'}:
     categories = []
     vendors = []
     models = []
+    pages_count = 0
+    current_page = 0
+    dark = ui.dark_mode()
+    dark.set_value(app.storage.general.get('dark_mode', False))
 
     try:
         with open(SYS_OBJECT_IDS_DB) as file:
@@ -265,10 +302,10 @@ if __name__ in {'__main__', '__mp_main__'}:
         with ui.button(
             icon = 'clear',
             on_click=clear_db
-        ) as btn_configure:
-            btn_configure.props('flat square')
-            btn_configure.classes('text-white px-2')
-            btn_configure.tooltip('Очистка БД')
+        ) as btn_clear_db:
+            btn_clear_db.props('flat square')
+            btn_clear_db.classes('text-white px-2')
+            btn_clear_db.tooltip('Очистка БД')
         with ui.button(
             icon = 'tune',
             on_click=lambda: (
@@ -287,12 +324,23 @@ if __name__ in {'__main__', '__mp_main__'}:
         with ui.button(
             icon = 'search',
             on_click=show_discover_dialog
-        ) as btn_subnet:
-            btn_subnet.props('flat square')
-            btn_subnet.classes('text-white px-2')
-            btn_subnet.tooltip('Обнаружение')
+        ) as btn_discover:
+            btn_discover.props('flat square')
+            btn_discover.classes('text-white px-2')
+            btn_discover.tooltip('Обнаружение')
+        ui.separator().props('vertical')
+        with ui.button(
+            icon = 'dark_mode',
+            on_click=dark_mode
+        ) as btn_mode:
+            btn_mode.props('flat square')
+            btn_mode.classes('text-white px-2')
+            btn_mode.tooltip('Темный')
     # Right drawer section
-    with ui.right_drawer(fixed = True, value = True).props('bordered'):
+    with ui.right_drawer(
+        fixed = True,
+        value = True
+    ).props('bordered') as filter_drawer:
         with ui.column().classes('w-full') as filters:
             categories_list = ui.select(
                 categories,
@@ -370,7 +418,8 @@ if __name__ in {'__main__', '__mp_main__'}:
         ui.label('Моделей:')
         total_models = ui.label('0')
         
+    dark_mode(False)
 
-    for device in app.storage.general.setdefault('db', []):
+    for device in app.storage.general.get('db', []):
         add_device(device)
     update_ui()
