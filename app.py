@@ -87,6 +87,7 @@ def filter_devices(device: Dict[str, str]) -> List[Dict[str, str]]:
 def reset_filter() -> None:
     for filter in filters.descendants():
         filter.set_value('')
+        filter.set_value(True)
 
 
 def show_discover_dialog() -> ui.dialog:
@@ -101,7 +102,10 @@ def show_discover_dialog() -> ui.dialog:
         subnet = ui.input(
             label='Подсеть'
         ).classes('w-full mt-10').props('square autofocus outlined clearable')
-        clear_db_switch = ui.switch('Очистить базу данных', value=True)
+        clear_db_switch = ui.switch(
+            'Очистить базу данных',
+            value=True
+        ).classes('w-full pr-3 bg-gray-100')
         with ui.row().classes('w-full justify-between'):
             ui.button(
                 'Начать',
@@ -122,7 +126,7 @@ async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
         start_time = time.time()
         dialog.close()
         if clear: clear_db()
-        status_label.set_text('Проверка доступности устройств')
+        status_label.set_text('Обнаружение доступных устройств')
         status.set_visibility(True)
         table.props(add='loading')
         hosts = get_hosts_from_subnet(subnet)
@@ -306,15 +310,15 @@ if __name__ in {'__main__', '__mp_main__'}:
                 label = 'Модель'
             ).classes('w-full').props('outlined dense square clearable')
             telnet_switch = ui.switch(
-                'Протокол Telnet',
+                'Протокол telnet',
                 value=True,
                 on_change=apply_filter
-            )
+            ).classes('w-full pr-3 bg-gray-100')
             ssh_switch = ui.switch(
-                'Протокол Ssh',
+                'Протокол ssh',
                 value=True,
                 on_change=apply_filter
-            )
+            ).classes('w-full pr-3 bg-gray-100')
         ui.space()
         with ui.column().classes(
             'w-full items-center'
