@@ -105,7 +105,7 @@ def filter_devices(device: Dict[str, str]) -> List[Dict[str, str]]:
     if models_list.value:
         result &= device['model'] == models_list.value
     if telnet_switch.value and ssh_switch.value:
-        result &= device['telnet'] or device['ssh']
+        result &= True
     elif telnet_switch.value:
         result &= device['telnet']
     elif ssh_switch.value:
@@ -159,7 +159,7 @@ async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
         start_time = time.time()
         if clear: clear_db()
         dialog.close()
-        status_label.set_text('Обнаружение доступных устройств')
+        status_label.set_text('Обнаружение устройств')
         status.set_visibility(True)
         table.props(add='loading')
         hosts = get_hosts_from_subnet(subnet)
