@@ -2,15 +2,19 @@ APP_TITLE = 'NDCE : Network Device Configuration Editor'
 
 DB_NAME = 'ndce/ndce.db'
 
-SOCKET_TIMEOUT = 1
-
-PING_TIMEOUT = 1
-PING_RETRIES = 5
+SYS_OBJECT_IDS_DB = 'ndce/ids.json'
 
 USERNAME = 'admin'
 PASSWORD = 'admin'
 
 MAX_CONCURRENT = 8
+
+ROWS_PER_PAGE = 50
+
+SOCKET_TIMEOUT = 1
+
+PING_TIMEOUT = 1
+PING_RETRIES = 5
 
 SNMP_TIMEOUT = 1
 SNMP_RETRIES = 1
@@ -20,13 +24,10 @@ SNMP_COMMUNITY = 'public'
 SNMP_SYS_NAME = '1.3.6.1.2.1.1.5.0'
 SNMP_SYS_DESCR = '1.3.6.1.2.1.1.1.0'
 SNMP_SYS_OBJECT_ID = '1.3.6.1.2.1.1.2.0'
-
 MKT_SYS_OBJECT_IDS = [
     '.1.3.6.1.4.1.14988.1',
     '.1.3.6.1.4.1.14988.2'
 ]
-
-SYS_OBJECT_IDS_DB = 'ndce/ids.json'
 
 COLUMNS_SETTINGS = [
     {

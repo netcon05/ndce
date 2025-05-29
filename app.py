@@ -3,7 +3,6 @@ import json
 import time
 import math
 import asyncio
-from urllib.parse import parse_qs
 from nicegui import ui, app
 from ndce.snmp import get_device_info
 from ndce.net import (
@@ -15,6 +14,7 @@ from ndce.net import (
 from ndce.telnet import Telnet
 from config import (
     APP_TITLE,
+    ROWS_PER_PAGE,
     SYS_OBJECT_IDS_DB,
     MAX_CONCURRENT,
     COLUMNS_SETTINGS,
@@ -40,6 +40,7 @@ def dark_mode(change: bool = True):
         categories_list.props(add='outlined')
         vendors_list.props(add='outlined')
         models_list.props(add='outlined')
+        rows_count_dropdown.props(add='options-dark="false"')
     else:
         btn_mode.set_icon('light_mode')
         btn_mode.tooltip('Светлый')
@@ -51,6 +52,7 @@ def dark_mode(change: bool = True):
         categories_list.props(remove='outlined')
         vendors_list.props(remove='outlined')
         models_list.props(remove='outlined')
+        rows_count_dropdown.props(remove='options-dark="false"')
     
 
 def add_device(device: Dict[str, str]) -> None:
@@ -73,6 +75,7 @@ def update_ui() -> None:
     total_categories.set_text(len(categories))
     total_vendors.set_text(len(vendors))
     total_models.set_text(len(models))
+    total_filtered.set_text(len(rows))
 
 
 def clear_db() -> None:
@@ -97,6 +100,12 @@ def delete_devices():
         )
 
 
+def change_rows_count(value: int):
+    global rows_count
+    rows_count = value
+    app.storage.general['rows_per_page'] = value
+
+
 def get_devices_count() -> int:
     return len(app.storage.general.get('db', []))
 
@@ -107,6 +116,7 @@ def apply_filter() -> None:
         filter_devices,
         app.storage.general.get('db', [])
     )))
+    total_filtered.set_text(len(rows))
     table.update()
 
 
@@ -293,6 +303,7 @@ if __name__ in {'__main__', '__mp_main__'}:
     categories = []
     vendors = []
     models = []
+    rows_count = app.storage.general.get('rows_per_page', ROWS_PER_PAGE)
     pages_count = 0
     current_page = 0
     dark = ui.dark_mode()
@@ -313,6 +324,39 @@ if __name__ in {'__main__', '__mp_main__'}:
     with ui.header().classes('items-center py-2'):
         ui.label(APP_TITLE).classes('text-lg')
         ui.space()
+        ui.separator().props('vertical color="blue-11"')
+        with ui.button(
+            icon = 'first_page'
+        ) as btn_first_page:
+            btn_first_page.props('flat square')
+            btn_first_page.classes('text-white px-2')
+            btn_first_page.tooltip('Первая страница')
+        with ui.button(
+            icon = 'chevron_left'
+        ) as btn_prev_page:
+            btn_prev_page.props('flat square')
+            btn_prev_page.classes('text-white px-2')
+            btn_prev_page.tooltip('Предыдущая страница')
+        pages_label = ui.label(f'{current_page} из {pages_count}')
+        with ui.button(
+            icon = 'chevron_right'
+        ) as btn_next_page:
+            btn_next_page.props('flat square')
+            btn_next_page.classes('text-white px-2')
+            btn_next_page.tooltip('Следующая страница')
+        with ui.button(
+            icon = 'last_page'
+        ) as btn_last_page:
+            btn_last_page.props('flat square')
+            btn_last_page.classes('text-white px-2')
+            btn_last_page.tooltip('Последняя страница')
+        ui.separator().props('vertical color="blue-11"')
+        rows_count_dropdown = ui.select(
+            [5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 0],
+            value=rows_count,
+            on_change=lambda: change_rows_count(rows_count_dropdown.value) 
+        ).props('dense dark borderless options-dark="false"')
+        ui.separator().props('vertical color="blue-11"')
         with ui.button(
             icon = 'delete_outline',
             on_click=delete_devices
@@ -380,12 +424,12 @@ if __name__ in {'__main__', '__mp_main__'}:
                 label = 'Модель'
             ).classes('w-full').props('outlined dense square clearable')
             telnet_switch = ui.switch(
-                'Протокол telnet',
+                'Включен протокол telnet',
                 value=True,
                 on_change=apply_filter
             ).classes('w-full pr-3 bg-gray-100')
             ssh_switch = ui.switch(
-                'Протокол ssh',
+                'Включен протокол ssh',
                 value=True,
                 on_change=apply_filter
             ).classes('w-full pr-3 bg-gray-100')
@@ -407,7 +451,8 @@ if __name__ in {'__main__', '__mp_main__'}:
         columns = COLUMNS_SETTINGS,
         column_defaults = COLUMNS_DEFAULTS,
         row_key = 'host',
-        selection = 'multiple'
+        selection = 'multiple',
+        on_select=lambda: total_selected.set_text(len(table.selected))
     ) as table:
         table.classes('shadow-none border rounded-none w-full')
         table.props('dense hide-selected-banner hide-no-data')
@@ -439,6 +484,12 @@ if __name__ in {'__main__', '__mp_main__'}:
         ui.separator().props('vertical color="blue-11"')
         ui.label('Моделей:')
         total_models = ui.label('0')
+        ui.separator().props('vertical color="blue-11"')
+        ui.label('Выбрано:')
+        total_selected = ui.label('0')
+        ui.separator().props('vertical color="blue-11"')
+        ui.label('Фильтровано:')
+        total_filtered = ui.label('0')
         
     dark_mode(False)
 
