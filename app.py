@@ -107,8 +107,35 @@ def change_rows_count(value: int):
     app.storage.general['rows_per_page'] = value
 
 
+def change_tooltip(element, text):
+    for child in element:
+        if isinstance(child, ui.tooltip):
+            element.remove(child)
+    element.tooltip(text)
+
+
+def change_discover_button():
+    if btn_discover.icon == 'search':
+        btn_discover.set_icon('stop')
+        change_tooltip(btn_discover, 'Остановить обнаружение')
+    else:
+        btn_discover.set_icon('search')
+        change_tooltip(btn_discover, 'Начать обнаружение')
+
+
 def get_devices_count() -> int:
     return len(app.storage.general.get('db', []))
+
+
+def cancel_discover_tasks():
+    global discover_tasks
+    if discover_tasks:
+        for task in discover_tasks:
+            try:
+                task.cancel()
+            except Exception as err:
+                print(err)
+        discover_tasks.clear()
 
 
 def apply_filter() -> None:
@@ -147,62 +174,71 @@ def reset_filter() -> None:
 
 
 def show_discover_dialog() -> ui.dialog:
-    with ui.dialog(value=True) as discover_dialog, ui.card().props('square'):
-        title = ui.label('Обнаружение устройств')
-        title.classes(
-            '''
-            w-full bg-primary text-base text-center
-            text-white py-2 absolute left-0 top-0
-            '''
+    if btn_discover.icon == 'search':
+        with ui.dialog(value=True) as discover_dialog, ui.card().props('square'):
+            title = ui.label('Обнаружение устройств')
+            title.classes(
+                '''
+                w-full bg-primary text-base text-center
+                text-white py-2 absolute left-0 top-0
+                '''
+            )
+            subnet = ui.input(
+                label='Подсеть'
+            ).classes('w-full mt-10').props('square autofocus outlined clearable')
+            clear_db_switch = ui.switch(
+                'Очистить базу данных',
+                value=True
+            ).classes('w-full pr-3 bg-gray-100')
+            with ui.row().classes('w-full justify-between'):
+                ui.button(
+                    'Начать',
+                    on_click=lambda: get_subnet(
+                        discover_dialog,
+                        subnet.value,
+                        clear_db_switch.value
+                    )
+                ).classes('w-24').props('square unelevated')
+                ui.button(
+                    'Отмена',
+                    on_click=discover_dialog.close
+                ).classes('w-24').props('square unelevated')
+            if dark.value:
+                clear_db_switch.classes(remove='bg-gray-100')
+    else:
+        cancel_discover_tasks()
+        table.props(remove='loading')
+        status.set_visibility(False)
+        change_discover_button()
+        ui.notify(
+            message=f'Обнаружено {get_devices_count()} устройств.',
+            position='top',
+            type='positive'
         )
-        subnet = ui.input(
-            label='Подсеть'
-        ).classes('w-full mt-10').props('square autofocus outlined clearable')
-        clear_db_switch = ui.switch(
-            'Очистить базу данных',
-            value=True
-        ).classes('w-full pr-3 bg-gray-100')
-        with ui.row().classes('w-full justify-between'):
-            ui.button(
-                'Начать',
-                on_click=lambda: get_subnet(
-                    discover_dialog,
-                    subnet.value,
-                    clear_db_switch.value
-                )
-            ).classes('w-24').props('square unelevated')
-            ui.button(
-                'Отмена',
-                on_click=discover_dialog.close
-            ).classes('w-24').props('square unelevated')
-        if dark.value:
-            clear_db_switch.classes(remove='bg-gray-100')
 
 
 async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
+    global discover_tasks
     if is_ip_subnet(subnet):
-        start_time = time.time()
-        if clear: clear_db()
+        change_discover_button()
+        if clear:
+            clear_db()
         dialog.close()
         status_label.set_text('Обнаружение устройств')
         status.set_visibility(True)
         table.props(add='loading')
         hosts = get_hosts_from_subnet(subnet)
         semaphore = asyncio.Semaphore(MAX_CONCURRENT)
-        tasks = [
+        discover_tasks = [
             asyncio.create_task(discover_device(host, semaphore))
             for host in hosts
         ]
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*discover_tasks)
         table.props(remove='loading')
         status.set_visibility(False)
-        end_time = time.time()
-        total_time = end_time - start_time
+        change_discover_button()
         ui.notify(
-            message=f'''
-                Обнаружено {get_devices_count()} 
-                устройств за {math.ceil(total_time)} секунд.
-            ''',
+            message=f'Обнаружено {get_devices_count()} устройств.',
             position='top',
             type='positive'
         )
@@ -301,6 +337,8 @@ async def send_commands(value: str) -> None:
 if __name__ in {'__main__', '__mp_main__'}:
     ui.run(title=APP_TITLE, port=8888, reconnect_timeout=60)
     
+    discover_tasks = []
+    configure_tasks = []
     ids = {}
     rows = []
     categories = []
@@ -398,7 +436,7 @@ if __name__ in {'__main__', '__mp_main__'}:
         ) as btn_discover:
             btn_discover.props('flat square')
             btn_discover.classes('text-white px-2')
-            btn_discover.tooltip('Обнаружение')
+            btn_discover.tooltip('Начать обнаружение')
         ui.separator().props('vertical color="blue-11"')
         with ui.button(
             icon = 'dark_mode',
