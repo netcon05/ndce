@@ -217,23 +217,22 @@ async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
 async def discover_device(host: str, semaphore: asyncio.Semaphore) -> None:
     device = await get_device_info(host, semaphore, ids)
     if device:
-        telnet = telnet_is_enabled(host)
-        ssh = ssh_is_enabled(host)
-        row = {
-            'host': device['host'],
-            'sysobjectid': device['sysobjectid'],
-            'hostname': device['hostname'],
-            'vendor': device['vendor'],
-            'model': device['model'],
-            'category': device['category'],
-            'telnet': telnet,
-            'ssh': ssh
-        }
         hosts = [row['host'] for row in rows]
-        if not row['host'] in hosts:
+        if not device['host'] in hosts:
+            telnet = telnet_is_enabled(host)
+            ssh = ssh_is_enabled(host)
+            row = {
+                'host': device['host'],
+                'sysobjectid': device['sysobjectid'],
+                'hostname': device['hostname'],
+                'vendor': device['vendor'],
+                'model': device['model'],
+                'category': device['category'],
+                'telnet': telnet,
+                'ssh': ssh
+            }
             app.storage.general.setdefault('db', []).append(row)
             add_device(row)
-        
 
 
 def show_configure_dialog() -> ui.dialog:
