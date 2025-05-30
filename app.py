@@ -230,7 +230,7 @@ async def discover_device(host: str, semaphore: asyncio.Semaphore) -> None:
             'ssh': ssh
         }
         hosts = [row['host'] for row in rows]
-        if not device['host'] in hosts:
+        if not row['host'] in hosts:
             app.storage.general.setdefault('db', []).append(row)
             add_device(row)
         
