@@ -14,9 +14,10 @@ from ndce.net import (
 from ndce.telnet import Telnet
 from config import (
     APP_TITLE,
-    ROWS_PER_PAGE,
-    SYS_OBJECT_IDS_DB,
     MAX_CONCURRENT,
+    ROWS_PER_PAGE,
+    ROWS_COUNT_OPTIONS,
+    SYS_OBJECT_IDS_DB,
     COLUMNS_SETTINGS,
     COLUMNS_DEFAULTS
 )
@@ -169,11 +170,11 @@ def show_discover_dialog() -> ui.dialog:
                     subnet.value,
                     clear_db_switch.value
                 )
-            ).classes('w-24').props('square')
+            ).classes('w-24').props('square unelevated')
             ui.button(
                 'Отмена',
                 on_click=discover_dialog.close
-            ).classes('w-24').props('square')
+            ).classes('w-24').props('square unelevated')
         if dark.value:
             clear_db_switch.classes(remove='bg-gray-100')
 
@@ -228,8 +229,11 @@ async def discover_device(host: str, semaphore: asyncio.Semaphore) -> None:
             'telnet': telnet,
             'ssh': ssh
         }
-        app.storage.general.setdefault('db', []).append(row)
-        add_device(row)
+        hosts = [row['host'] for row in rows]
+        if not device['host'] in hosts:
+            app.storage.general.setdefault('db', []).append(row)
+            add_device(row)
+        
 
 
 def show_configure_dialog() -> ui.dialog:
@@ -257,11 +261,11 @@ def show_configure_dialog() -> ui.dialog:
                     on_click=lambda: get_commands(
                         configure_dialog, commands.value
                     )
-                ).classes('w-24').props('square')
+                ).classes('w-24').props('square unelevated')
                 ui.button(
                     'Отмена',
                     on_click=configure_dialog.close
-                ).classes('w-24').props('square')
+                ).classes('w-24').props('square unelevated')
 
 
 async def get_commands(dialog: ui.dialog, value: str) -> None:
@@ -352,10 +356,12 @@ if __name__ in {'__main__', '__mp_main__'}:
             btn_last_page.tooltip('Последняя страница')
         ui.separator().props('vertical color="blue-11"')
         rows_count_dropdown = ui.select(
-            [5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 0],
+            ROWS_COUNT_OPTIONS,
             value=rows_count,
             on_change=lambda: change_rows_count(rows_count_dropdown.value) 
-        ).props('dense dark borderless options-dark="false"')
+        ).props(
+            'dense dark borderless options-dark="false"'
+        ).tooltip('Устройств на странице')
         ui.separator().props('vertical color="blue-11"')
         with ui.button(
             icon = 'delete_outline',
@@ -444,7 +450,7 @@ if __name__ in {'__main__', '__mp_main__'}:
         ui.button(
             'Сбросить фильтр',
             on_click = reset_filter
-        ).classes('w-full').props('square')
+        ).classes('w-full').props('square unelevated')
     # Table section
     with ui.table(
         rows = rows,
