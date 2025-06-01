@@ -1,7 +1,5 @@
 from typing import Dict, List
 import json
-import time
-import math
 import asyncio
 from nicegui import ui, app
 from ndce.snmp import get_device_info
@@ -85,6 +83,7 @@ def clear_db() -> None:
     categories.clear()
     vendors.clear()
     models.clear()
+    change_page()
     update_ui()
 
 
@@ -103,8 +102,10 @@ def delete_devices():
 
 def change_rows_count(value: int):
     global rows_count
-    rows_count = value
     app.storage.general['rows_per_page'] = value
+    table.selected = []
+    total_selected.set_text('0')
+    change_page()
 
 
 def change_tooltip(element, text):
@@ -145,10 +146,12 @@ def apply_filter() -> None:
         app.storage.general.get('db', [])
     )))
     total_filtered.set_text(len(rows))
-    table.update()
+    
 
 
 def filter_devices(device: Dict[str, str]) -> List[Dict[str, str]]:
+    table.selected = []
+    total_selected.set_text('0')
     result = True
     if categories_list.value:
         result &= device['category'] == categories_list.value
@@ -175,7 +178,9 @@ def reset_filter() -> None:
 
 def show_discover_dialog() -> ui.dialog:
     if btn_discover.icon == 'search':
-        with ui.dialog(value=True) as discover_dialog, ui.card().props('square'):
+        with ui.dialog(
+            value=True
+        ) as discover_dialog, ui.card().props('square'):
             title = ui.label('Обнаружение устройств')
             title.classes(
                 '''
@@ -185,7 +190,9 @@ def show_discover_dialog() -> ui.dialog:
             )
             subnet = ui.input(
                 label='Подсеть'
-            ).classes('w-full mt-10').props('square autofocus outlined clearable')
+            ).classes('w-full mt-10').props(
+                'square autofocus outlined clearable'
+            )
             clear_db_switch = ui.switch(
                 'Очистить базу данных',
                 value=True
@@ -211,7 +218,7 @@ def show_discover_dialog() -> ui.dialog:
         status.set_visibility(False)
         change_discover_button()
         ui.notify(
-            message=f'Обнаружено {get_devices_count()} устройств.',
+            message=f'Обнаружено {get_devices_count()} устройств',
             position='top',
             type='positive'
         )
@@ -237,8 +244,9 @@ async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
         table.props(remove='loading')
         status.set_visibility(False)
         change_discover_button()
+        change_page()
         ui.notify(
-            message=f'Обнаружено {get_devices_count()} устройств.',
+            message=f'Обнаружено {get_devices_count()} устройств',
             position='top',
             type='positive'
         )
@@ -334,6 +342,63 @@ async def send_commands(value: str) -> None:
     )
 
 
+def change_page():
+    global rows, rows_count, pages_count, current_page
+    rows.clear()
+    devices = app.storage.general.get('db', [])
+    if rows_count > 0:
+        devices_count = get_devices_count()
+        pages_count = devices_count // rows_count
+        if devices_count % rows_count != 0:
+            pages_count += 1
+        if pages_count > 0:
+            if current_page == 0:
+                current_page = 1
+            elif current_page > pages_count:
+                current_page = pages_count
+            rows.extend(
+                devices[
+                    (current_page - 1) * rows_count
+                    :
+                    current_page * rows_count
+                ]
+            )
+        else:
+            current_page = 0
+        pages_label.set_text(f'{current_page} из {pages_count}')
+        table.update()
+    else:
+        pages_count = 1
+        current_page = 1
+        rows.extend(devices)
+
+
+def goto_first_page():
+    global current_page
+    current_page = 1
+    change_page()
+
+
+def goto_previous_page():
+    global current_page
+    if current_page > 1:
+        current_page -= 1
+        change_page()
+
+
+def goto_next_page():
+    global current_page
+    if current_page < pages_count:
+        current_page += 1
+        change_page()
+
+
+def goto_last_page():
+    global current_page
+    current_page = pages_count
+    change_page()
+
+
 if __name__ in {'__main__', '__mp_main__'}:
     ui.run(title=APP_TITLE, port=8888, reconnect_timeout=60)
     
@@ -345,6 +410,15 @@ if __name__ in {'__main__', '__mp_main__'}:
     vendors = []
     models = []
     rows_count = app.storage.general.get('rows_per_page', ROWS_PER_PAGE)
+    # Если ранее сохранено количество строк на странице, а после
+    # внесены изменения в конфиг и соответствующего значения
+    # в нем нет, возникнет ошибка. В таком случае делаем
+    # активным первый элемент списка и сохраняем изменения
+    if not rows_count in ROWS_COUNT_OPTIONS:
+        if ROWS_COUNT_OPTIONS:
+            rows_count = ROWS_COUNT_OPTIONS[0]
+        else:
+            rows_count = 0
     pages_count = 0
     current_page = 0
     dark = ui.dark_mode()
@@ -367,26 +441,30 @@ if __name__ in {'__main__', '__mp_main__'}:
         ui.space()
         ui.separator().props('vertical color="blue-11"')
         with ui.button(
-            icon = 'first_page'
+            icon='first_page',
+            on_click=goto_first_page
         ) as btn_first_page:
             btn_first_page.props('flat square')
             btn_first_page.classes('text-white px-2')
             btn_first_page.tooltip('Первая страница')
         with ui.button(
-            icon = 'chevron_left'
+            icon='chevron_left',
+            on_click=goto_previous_page
         ) as btn_prev_page:
             btn_prev_page.props('flat square')
             btn_prev_page.classes('text-white px-2')
             btn_prev_page.tooltip('Предыдущая страница')
-        pages_label = ui.label(f'{current_page} из {pages_count}')
+        pages_label = ui.label(f'0 из 0')
         with ui.button(
-            icon = 'chevron_right'
+            icon='chevron_right',
+            on_click=goto_next_page
         ) as btn_next_page:
             btn_next_page.props('flat square')
             btn_next_page.classes('text-white px-2')
             btn_next_page.tooltip('Следующая страница')
         with ui.button(
-            icon = 'last_page'
+            icon='last_page',
+            on_click=goto_last_page
         ) as btn_last_page:
             btn_last_page.props('flat square')
             btn_last_page.classes('text-white px-2')
@@ -396,19 +474,22 @@ if __name__ in {'__main__', '__mp_main__'}:
             ROWS_COUNT_OPTIONS,
             value=rows_count,
             on_change=lambda: change_rows_count(rows_count_dropdown.value) 
-        ).props(
-            'dense dark borderless options-dark="false"'
-        ).tooltip('Устройств на странице')
+        ).props('dense dark borderless options-dark="false"')
+        # Наличие значения 0 обязательно в списке так как именно оно
+        # дает возможность вывода полного списка устройств
+        if not 0 in rows_count_dropdown.options:
+            rows_count_dropdown.options.insert(0, 0)
+        rows_count_dropdown.tooltip('Устройств на странице')
         ui.separator().props('vertical color="blue-11"')
         with ui.button(
-            icon = 'delete_outline',
+            icon='delete_outline',
             on_click=delete_devices
         ) as btn_delete_rows:
             btn_delete_rows.props('flat square')
             btn_delete_rows.classes('text-white px-2')
             btn_delete_rows.tooltip('Удаление устройств')
         with ui.button(
-            icon = 'clear',
+            icon='clear',
             on_click=clear_db
         ) as btn_clear_db:
             btn_clear_db.props('flat square')
@@ -416,7 +497,7 @@ if __name__ in {'__main__', '__mp_main__'}:
             btn_clear_db.tooltip('Очистка БД')
         ui.separator().props('vertical color="blue-11"')
         with ui.button(
-            icon = 'tune',
+            icon='tune',
             on_click=lambda: (
                 show_configure_dialog()
                 if len(table.selected) > 0
@@ -431,7 +512,7 @@ if __name__ in {'__main__', '__mp_main__'}:
             btn_configure.classes('text-white px-2')
             btn_configure.tooltip('Конфигурирование')
         with ui.button(
-            icon = 'search',
+            icon='search',
             on_click=show_discover_dialog
         ) as btn_discover:
             btn_discover.props('flat square')
@@ -439,7 +520,7 @@ if __name__ in {'__main__', '__mp_main__'}:
             btn_discover.tooltip('Начать обнаружение')
         ui.separator().props('vertical color="blue-11"')
         with ui.button(
-            icon = 'dark_mode',
+            icon='dark_mode',
             on_click=dark_mode
         ) as btn_mode:
             btn_mode.props('flat square')
@@ -454,17 +535,17 @@ if __name__ in {'__main__', '__mp_main__'}:
             categories_list = ui.select(
                 categories,
                 on_change=apply_filter,
-                label = 'Категория'
+                label='Категория'
             ).classes('w-full').props('outlined dense square clearable')
             vendors_list = ui.select(
                 vendors,
                 on_change=apply_filter,
-                label = 'Производитель'
+                label='Производитель'
             ).classes('w-full').props('outlined dense square clearable')
             models_list = ui.select(
                 models,
                 on_change=apply_filter,
-                label = 'Модель'
+                label='Модель'
             ).classes('w-full').props('outlined dense square clearable')
             telnet_switch = ui.switch(
                 'Включен протокол telnet',
@@ -486,15 +567,15 @@ if __name__ in {'__main__', '__mp_main__'}:
         ui.space()
         ui.button(
             'Сбросить фильтр',
-            on_click = reset_filter
+            on_click=reset_filter
         ).classes('w-full').props('square unelevated')
     # Table section
     with ui.table(
-        rows = rows,
-        columns = COLUMNS_SETTINGS,
-        column_defaults = COLUMNS_DEFAULTS,
-        row_key = 'host',
-        selection = 'multiple',
+        rows=rows,
+        columns=COLUMNS_SETTINGS,
+        column_defaults=COLUMNS_DEFAULTS,
+        row_key='host',
+        selection='multiple',
         on_select=lambda: total_selected.set_text(len(table.selected))
     ) as table:
         table.classes('shadow-none border rounded-none w-full')
@@ -538,4 +619,4 @@ if __name__ in {'__main__', '__mp_main__'}:
 
     for device in app.storage.general.get('db', []):
         add_device(device)
-    update_ui()
+    change_page()

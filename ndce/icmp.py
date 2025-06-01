@@ -9,6 +9,9 @@ async def ping_host(
     timeout: Optional[int|float] = PING_TIMEOUT,
     count: Optional[int] = PING_RETRIES
 ) -> Tuple[str, bool]:
+    """
+    Функция проверяет доступность заданного узла по протоколу icmp
+    """
     for i in range(count):
         try:
             await aioping.ping(host, timeout=timeout)

@@ -5,6 +5,9 @@ from config import SOCKET_TIMEOUT
 
 
 def is_ip_address(ip: str) -> bool:
+    """
+    Функция проверяет соответствие заданной строки формату ip адреса
+    """
     try:
         ipaddress.ip_address(ip)
         return True
@@ -13,6 +16,9 @@ def is_ip_address(ip: str) -> bool:
 
 
 def is_ip_subnet(subnet: str) -> bool:
+    """
+    Функция проверяет соответствие заданной строки формату ip подсети
+    """
     try:
         ipaddress.ip_network(subnet)
         return True
@@ -21,6 +27,9 @@ def is_ip_subnet(subnet: str) -> bool:
 
 
 def get_hosts_from_subnet(subnet: str) -> List[str]:
+    """
+    Функция возвращает список хостовых адресов заданной подсети
+    """
     try:
         return [str(host) for host in ipaddress.ip_network(subnet).hosts()]
     except:
@@ -35,6 +44,9 @@ def tcp_port_is_open(
     port: int,
     timeout: Optional[float|int] = SOCKET_TIMEOUT
 ) -> bool:
+    """
+    Функция проверяет открытость порта на узле по заданному протоколу
+    """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.settimeout(timeout)
         try:
@@ -46,8 +58,14 @@ def tcp_port_is_open(
 
 
 def telnet_is_enabled(ip: str) -> bool:
+    """
+    Функция проверяет доступность узла по протоколу telnet
+    """
     return tcp_port_is_open(ip, 23)
 
 
 def ssh_is_enabled(ip: str) -> bool:
+    """
+    Функция проверяет доступность узла по протоколу ssh
+    """
     return tcp_port_is_open(ip, 22)
