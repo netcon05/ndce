@@ -2,26 +2,17 @@ from typing import Dict, Optional, Any, List
 import asyncio
 import aiosnmp
 from ndce.icmp import ping_host
-from config import (
-    SNMP_PORT,
-    SNMP_COMMUNITY,
-    SNMP_TIMEOUT,
-    SNMP_RETRIES,
-    SNMP_SYS_NAME,
-    SNMP_SYS_DESCR,
-    SNMP_SYS_OBJECT_ID,
-    MKT_SYS_OBJECT_IDS
-)
+import config
 
 
 async def get_snmp_values(
     oids: List[str],
     host: str,
     semaphore: asyncio.Semaphore,
-    port: Optional[int] = SNMP_PORT,
-    community: Optional[str] = SNMP_COMMUNITY,
-    timeout: Optional[int] = SNMP_TIMEOUT,
-    retries: Optional[int] = SNMP_RETRIES
+    port: Optional[int] = config.SNMP_PORT,
+    community: Optional[str] = config.SNMP_COMMUNITY,
+    timeout: Optional[int] = config.SNMP_TIMEOUT,
+    retries: Optional[int] = config.SNMP_RETRIES
 ) -> Any:
     """
     Функция для получения данных по протоколу snmp
@@ -60,33 +51,30 @@ async def get_device_info(
     Функция возвращает значения hostname, description и sysobjectid
     одним запросом от заданного устройства по протоколу snmp
     """
-    oids = [SNMP_SYS_NAME, SNMP_SYS_DESCR, SNMP_SYS_OBJECT_ID]
-    result = {
-        'host': host,
-        'sysobjectid': 'Unknown',
-        'hostname': 'Unknown',
-        'vendor': 'Unknown',
-        'model': 'Unknown',
-        'category': 'Unknown',
-    }
+    oids = [
+        config.SNMP_SYS_NAME,
+        config.SNMP_SYS_DESCR,
+        config.SNMP_SYS_OBJECT_ID
+    ]
     device_info = await get_snmp_values(oids, host, semaphore)
     if device_info:
+        result = {'host': host}
         hostname, description, objectid = device_info
         if hostname:
             result['hostname'] = hostname
         if objectid:
             result['sysobjectid'] = objectid
-            if  objectid in MKT_SYS_OBJECT_IDS:
+            if  objectid in config.MKT_SYS_OBJECT_IDS:
                 result['vendor'] = 'MikroTik'
                 if description:
-                    if objectid == MKT_SYS_OBJECT_IDS[0]:
+                    if objectid == config.MKT_SYS_OBJECT_IDS[0]:
                         # RouterOS устройство
                         # Маршрутизаторы MikroTik отдают SYS_DESCR
                         # в формате 'RouterOS RB750GL'.
                         # Необходимо удалить начальное RouterOS.
                         result['model'] = ''.join(description.split()[1::])
                         result['category'] = 'Router'
-                    elif objectid == MKT_SYS_OBJECT_IDS[1]:
+                    elif objectid == config.MKT_SYS_OBJECT_IDS[1]:
                         # SwOS устройство
                         # Коммутаторы MikroTik отдают SYS_DESCR
                         # в формате 'RB260GS'.
@@ -97,4 +85,4 @@ async def get_device_info(
                 result['vendor'] = ids[objectid]['vendor']
                 result['model'] = ids[objectid]['model']
                 result['category'] = ids[objectid]['category']
-    return result
+        return result

@@ -47,7 +47,7 @@ COLUMNS_SETTINGS = [
     },
     {
         'name': 'sysobjectid',
-        'label': 'SysObjID',
+        'label': 'OID',
         'field': 'sysobjectid',
         'sortable': False,
         'required': True

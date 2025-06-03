@@ -1,7 +1,7 @@
 from typing import List, Optional
 import ipaddress
 import socket
-from config import SOCKET_TIMEOUT
+import config
 
 
 def is_ip_address(ip: str) -> bool:
@@ -42,7 +42,7 @@ def get_hosts_from_subnet(subnet: str) -> List[str]:
 def tcp_port_is_open(
     ip: str,
     port: int,
-    timeout: Optional[float|int] = SOCKET_TIMEOUT
+    timeout: Optional[float|int] = config.SOCKET_TIMEOUT
 ) -> bool:
     """
     Функция проверяет открытость порта на узле по заданному протоколу

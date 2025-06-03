@@ -1,15 +1,15 @@
 import asyncio
 import telnetlib3
 from ndce.net import telnet_is_enabled
-from config import USERNAME, PASSWORD
+import config
 
 
 class Telnet:
     def __init__(
         self,
         ip,
-        username = USERNAME,
-        password = PASSWORD,
+        username = config.USERNAME,
+        password = config.PASSWORD,
         commands = []
     ):
         self.ip = ip

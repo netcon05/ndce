@@ -1,13 +1,13 @@
 from typing import Optional, Tuple
 import asyncio
 import aioping
-from config import PING_TIMEOUT, PING_RETRIES
+import config
 
 
 async def ping_host(
     host: str,
-    timeout: Optional[int|float] = PING_TIMEOUT,
-    count: Optional[int] = PING_RETRIES
+    timeout: Optional[int|float] = config.PING_TIMEOUT,
+    count: Optional[int] = config.PING_RETRIES
 ) -> Tuple[str, bool]:
     """
     Функция проверяет доступность заданного узла по протоколу icmp

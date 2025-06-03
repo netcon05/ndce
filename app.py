@@ -10,88 +10,95 @@ from ndce.net import (
     is_ip_subnet
 )
 from ndce.telnet import Telnet
-from config import (
-    APP_TITLE,
-    MAX_CONCURRENT,
-    ROWS_PER_PAGE,
-    ROWS_COUNT_OPTIONS,
-    SYS_OBJECT_IDS_DB,
-    COLUMNS_SETTINGS,
-    COLUMNS_DEFAULTS
-)
+import config
 
 
-def dark_mode(change: bool = True):
-    if change:
-        if dark.value:
-            dark.disable()
-        else:
-            dark.enable()
-        app.storage.general['dark_mode'] = dark.value
-    if not dark.value:
-        btn_mode.set_icon('dark_mode')
-        btn_mode.tooltip('Темный')
-        table.classes(add='border')
-        telnet_switch.classes(add='bg-gray-100')
-        ssh_switch.classes(add='bg-gray-100')
-        table.props(remove='separator="none"')
-        filter_drawer.props(add='bordered')
-        categories_list.props(add='outlined')
-        vendors_list.props(add='outlined')
-        models_list.props(add='outlined')
-        rows_count_dropdown.props(add='options-dark="false"')
-    else:
+def change_tooltip(element: ui.element, text: str) -> None:
+    for child in element:
+        if isinstance(child, ui.tooltip):
+            element.remove(child)
+    element.tooltip(text)
+
+
+def set_ui_mode() -> None:
+    if dark_mode.value:
         btn_mode.set_icon('light_mode')
         btn_mode.tooltip('Светлый')
-        table.classes(remove='border')
+        devices_table.classes(remove='border')
         telnet_switch.classes(remove='bg-gray-100')
         ssh_switch.classes(remove='bg-gray-100')
-        table.props(add='separator="none"')
-        filter_drawer.props(remove='bordered')
-        categories_list.props(remove='outlined')
-        vendors_list.props(remove='outlined')
-        models_list.props(remove='outlined')
-        rows_count_dropdown.props(remove='options-dark="false"')
+        devices_table.props(add='separator="none"')
+        filters_drawer.props(remove='bordered')
+        lst_categories.props(remove='outlined')
+        lst_vendors.props(remove='outlined')
+        lst_models.props(remove='outlined')
+        rows_per_page_dropdown.props(remove='options-dark="false"')
+    else:
+        btn_mode.set_icon('dark_mode')
+        btn_mode.tooltip('Темный')
+        devices_table.classes(add='border')
+        telnet_switch.classes(add='bg-gray-100')
+        ssh_switch.classes(add='bg-gray-100')
+        devices_table.props(remove='separator="none"')
+        filters_drawer.props(add='bordered')
+        lst_categories.props(add='outlined')
+        lst_vendors.props(add='outlined')
+        lst_models.props(add='outlined')
+        rows_per_page_dropdown.props(add='options-dark="false"')
+
+
+def change_ui_mode() -> None:
+    if dark_mode.value:
+        dark_mode.disable()
+    else:
+        dark_mode.enable()
+    app.storage.general['dark_mode'] = dark_mode.value
+    set_ui_mode()
     
 
 def add_device(device: Dict[str, str]) -> None:
-    rows.append(device)
-    if not device['category'] in categories:
-        categories.append(device['category'])
-    if not device['vendor'] in vendors:
-        vendors.append(device['vendor'])
-    if not device['model'] in models:
-        models.append(device['model'])
+    db_full.append(device)
+    devices_table.add_row(device)
+    apply_filters()
     update_ui()
 
 
 def update_ui() -> None:
-    table.update()
-    categories_list.update()
-    vendors_list.update()
-    models_list.update()
-    total_devices.set_text(get_devices_count())
-    total_categories.set_text(len(categories))
-    total_vendors.set_text(len(vendors))
-    total_models.set_text(len(models))
-    total_filtered.set_text(len(rows))
+    lst_categories.update()
+    lst_vendors.update()
+    lst_models.update()
+    lbl_total_devices.set_text(len(db_full))
+    lbl_total_categories.set_text(len(lst_categories.options))
+    lbl_total_vendors.set_text(len(lst_vendors.options))
+    lbl_total_models.set_text(len(lst_models.options))
+    lbl_total_filtered.set_text(len(devices_table.rows))
+    lbl_total_selected.set_text(len(devices_table.selected))
 
 
 def clear_db() -> None:
     app.storage.general.pop('db')
-    rows.clear()
-    categories.clear()
-    vendors.clear()
-    models.clear()
+    db_full.clear()
+    db_filtered.clear()
+    devices_table.clear()
+    lst_categories.clear()
+    lst_vendors.clear()
+    lst_models.clear()
+    reset_filters()
     change_page()
     update_ui()
 
 
-def delete_devices():
-    if table.selected:
-        table.remove_rows(table.selected)
-        rows = table.rows
-        app.storage.general['db'] = rows
+def delete_devices() -> None:
+    global db_full
+    if devices_table.selected:
+        db_full = list(filter(
+            lambda row: not row in devices_table.selected,
+            db_full
+        ))
+        app.storage.general['db'] = db_full
+        devices_table.remove_rows(devices_table.selected)
+        apply_filters()
+        update_ui()
     else:
         ui.notify(
             message='Выберите устройства',
@@ -100,36 +107,34 @@ def delete_devices():
         )
 
 
-def change_rows_count(value: int):
-    global rows_count
+def set_rows_per_page(value: int) -> None:
+    global rows_per_page
     app.storage.general['rows_per_page'] = value
-    table.selected = []
-    total_selected.set_text('0')
-    change_page()
+    rows_per_page = value
+    devices_table.selected = []
+    lbl_total_selected.set_text('0')
+    apply_filters()
 
 
-def change_tooltip(element, text):
-    for child in element:
-        if isinstance(child, ui.tooltip):
-            element.remove(child)
-    element.tooltip(text)
-
-
-def change_discover_button():
+def change_discover_button() -> None:
     if btn_discover.icon == 'search':
         btn_discover.set_icon('stop')
         change_tooltip(btn_discover, 'Остановить обнаружение')
     else:
         btn_discover.set_icon('search')
-        change_tooltip(btn_discover, 'Начать обнаружение')
+        change_tooltip(btn_discover, 'Обнаружение')
 
 
-def get_devices_count() -> int:
-    return len(app.storage.general.get('db', []))
+def change_configure_button() -> None:
+    if btn_configure.icon == 'tune':
+        btn_configure.set_icon('stop')
+        change_tooltip(btn_configure, 'Остановить передачу команд')
+    else:
+        btn_configure.set_icon('tune')
+        change_tooltip(btn_configure, 'Передача команд')
 
 
-def cancel_discover_tasks():
-    global discover_tasks
+def cancel_discover_tasks() -> None:
     if discover_tasks:
         for task in discover_tasks:
             try:
@@ -139,26 +144,43 @@ def cancel_discover_tasks():
         discover_tasks.clear()
 
 
-def apply_filter() -> None:
-    rows.clear()
-    rows.extend(list(filter(
-        filter_devices,
-        app.storage.general.get('db', [])
-    )))
-    total_filtered.set_text(len(rows))
+def cancel_configure_tasks() -> None:
+    if configure_tasks:
+        for task in configure_tasks:
+            try:
+                task.cancel()
+            except Exception as err:
+                print(err)
+        configure_tasks.clear()
+
+
+def apply_filters() -> None:
+    global db_filtered
+    db_filtered = list(filter(filter_devices, db_full))
+    devices_table.clear()
+    devices_table.update_rows(db_filtered, clear_selection=True)
+    lst_categories.set_options(
+        list(set(map(lambda row: row['category'], db_filtered)))
+    )
+    lst_vendors.set_options(
+        list(set(map(lambda row: row['vendor'], db_filtered)))
+    )
+    lst_models.set_options(
+        list(set(map(lambda row: row['model'], db_filtered)))
+    )
+    change_page()
+    update_ui()
     
 
 
 def filter_devices(device: Dict[str, str]) -> List[Dict[str, str]]:
-    table.selected = []
-    total_selected.set_text('0')
     result = True
-    if categories_list.value:
-        result &= device['category'] == categories_list.value
-    if vendors_list.value:
-        result &= device['vendor'] == vendors_list.value
-    if models_list.value:
-        result &= device['model'] == models_list.value
+    if lst_categories.value:
+        result &= device['category'] == lst_categories.value
+    if lst_vendors.value:
+        result &= device['vendor'] == lst_vendors.value
+    if lst_models.value:
+        result &= device['model'] == lst_models.value
     if telnet_switch.value and ssh_switch.value:
         result &= True
     elif telnet_switch.value:
@@ -170,8 +192,8 @@ def filter_devices(device: Dict[str, str]) -> List[Dict[str, str]]:
     return result
 
 
-def reset_filter() -> None:
-    for filter in filters.descendants():
+def reset_filters() -> None:
+    for filter in filters_block.descendants():
         filter.set_value('')
         filter.set_value(True)
 
@@ -210,17 +232,18 @@ def show_discover_dialog() -> ui.dialog:
                     'Отмена',
                     on_click=discover_dialog.close
                 ).classes('w-24').props('square unelevated')
-            if dark.value:
+            if dark_mode.value:
                 clear_db_switch.classes(remove='bg-gray-100')
     else:
         cancel_discover_tasks()
-        table.props(remove='loading')
-        status.set_visibility(False)
+        devices_table.props(remove='loading')
+        status_block.set_visibility(False)
         change_discover_button()
+        apply_filters()
         ui.notify(
-            message=f'Обнаружено {get_devices_count()} устройств',
+            message='Обнаружение устройств прекращено',
             position='top',
-            type='positive'
+            type='info'
         )
 
 
@@ -228,25 +251,26 @@ async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
     global discover_tasks
     if is_ip_subnet(subnet):
         change_discover_button()
+        # Если установлен переключатель Очистить БД
         if clear:
             clear_db()
         dialog.close()
-        status_label.set_text('Обнаружение устройств')
-        status.set_visibility(True)
-        table.props(add='loading')
+        lbl_status.set_text('Обнаружение устройств')
+        status_block.set_visibility(True)
+        devices_table.props(add='loading')
         hosts = get_hosts_from_subnet(subnet)
-        semaphore = asyncio.Semaphore(MAX_CONCURRENT)
+        semaphore = asyncio.Semaphore(config.MAX_CONCURRENT)
         discover_tasks = [
             asyncio.create_task(discover_device(host, semaphore))
             for host in hosts
         ]
         await asyncio.gather(*discover_tasks)
-        table.props(remove='loading')
-        status.set_visibility(False)
+        devices_table.props(remove='loading')
+        status_block.set_visibility(False)
         change_discover_button()
-        change_page()
+        apply_filters()
         ui.notify(
-            message=f'Обнаружено {get_devices_count()} устройств',
+            message=f'Обнаружение устройств завершено',
             position='top',
             type='positive'
         )
@@ -261,17 +285,20 @@ async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
 async def discover_device(host: str, semaphore: asyncio.Semaphore) -> None:
     device = await get_device_info(host, semaphore, ids)
     if device:
-        hosts = [row['host'] for row in rows]
+        # IP адрес - уникальный идентификатор устройства в базе
+        # Получаем список всех адресов в базе для дальнейшей сверки
+        hosts = [row['host'] for row in db_full]
+        # Добавляется только устройство, которое отсутствует в базе
         if not device['host'] in hosts:
             telnet = telnet_is_enabled(host)
             ssh = ssh_is_enabled(host)
             row = {
-                'host': device['host'],
-                'sysobjectid': device['sysobjectid'],
-                'hostname': device['hostname'],
-                'vendor': device['vendor'],
-                'model': device['model'],
-                'category': device['category'],
+                'host': device.get('host', 'Unknown'),
+                'sysobjectid': device.get('sysobjectid', 'Unknown'),
+                'hostname': device.get('hostname', 'Unknown'),
+                'vendor': device.get('vendor', 'Unknown'),
+                'model': device.get('model', 'Unknown'),
+                'category': device.get('category', 'Unknown'),
                 'telnet': telnet,
                 'ssh': ssh
             }
@@ -280,41 +307,71 @@ async def discover_device(host: str, semaphore: asyncio.Semaphore) -> None:
 
 
 def show_configure_dialog() -> ui.dialog:
-    with ui.dialog(value=True)as configure_dialog:
-        with ui.card().classes('w-full max-h-96').props('square'):
-            title = ui.label('Конфигурирование устройств')
-            title.classes(
-                '''
-                w-full bg-primary text-base text-center
-                text-white py-2 absolute left-0 top-0
-                '''
-            )
-            commands = ui.textarea(
-                label='Список команд',
-                placeholder='Вводите по одной команде на строку'
-            ).classes('w-full mt-10').props(
-                '''
-                square autofocus standout autogrow
-                outlined input-class=max-h-64
-                '''
-            )
-            with ui.row().classes('w-full justify-between'):
-                ui.button(
-                    'Начать',
-                    on_click=lambda: get_commands(
-                        configure_dialog, commands.value
-                    )
-                ).classes('w-24').props('square unelevated')
-                ui.button(
-                    'Отмена',
-                    on_click=configure_dialog.close
-                ).classes('w-24').props('square unelevated')
+    if btn_configure.icon == 'tune':
+        with ui.dialog(value=True)as configure_dialog:
+            with ui.card().classes('w-full max-h-96').props('square'):
+                title = ui.label('Конфигурирование устройств')
+                title.classes(
+                    '''
+                    w-full bg-primary text-base text-center
+                    text-white py-2 absolute left-0 top-0
+                    '''
+                )
+                commands = ui.textarea(
+                    label='Список команд',
+                    placeholder='Вводите по одной команде на строку'
+                ).classes('w-full mt-10').props(
+                    '''
+                    square autofocus standout autogrow
+                    outlined input-class=max-h-64
+                    '''
+                )
+                with ui.row().classes('w-full justify-between'):
+                    ui.button(
+                        'Начать',
+                        on_click=lambda: send_commands(
+                            configure_dialog, commands.value
+                        )
+                    ).classes('w-24').props('square unelevated')
+                    ui.button(
+                        'Отмена',
+                        on_click=configure_dialog.close
+                    ).classes('w-24').props('square unelevated')
+    else:
+        cancel_configure_tasks()
+        devices_table.props(remove='loading')
+        status_block.set_visibility(False)
+        change_configure_button()
+        devices_table.selected = []
+        lbl_total_selected.set_text('0')
+        ui.notify(
+            message='Передача команд прекращена',
+            position='top',
+            type='info'
+        )
 
 
-async def get_commands(dialog: ui.dialog, value: str) -> None:
-    if value:
+async def send_commands(dialog: ui.dialog, commands: str) -> None:
+    global configure_tasks
+    if commands:
         dialog.close()
-        await send_commands(value)
+        # Посылаем команды только выбранным устройствам
+        ips = [device['host'] for device in devices_table.selected]
+        commands_list = [f'{command}\n' for command in commands.split('\n')]
+        configure_tasks = [
+            Telnet(ip=ip, commands=commands_list).cli_connect() for ip in ips
+        ]
+        lbl_status.set_text('Идет передача комманд')
+        devices_table.props(add='loading')
+        status_block.set_visibility(True)
+        await asyncio.gather(*configure_tasks)
+        status_block.set_visibility(False)
+        devices_table.props(remove='loading')
+        ui.notify(
+            message=f'Передано {len(commands)} команд на {len(ips)} устройств',
+            position='top',
+            type='positive'
+        )
     else:
         ui.notify(
             message='Введите команды для выполнения',
@@ -323,54 +380,37 @@ async def get_commands(dialog: ui.dialog, value: str) -> None:
         )
 
 
-async def send_commands(value: str) -> None:
-    ips = [device['host'] for device in table.selected]
-    commands = [f'{command}\n' for command in value.split('\n')]
-    tasks = [
-        Telnet(ip=ip, commands=commands).cli_connect() for ip in ips
-    ]
-    status_label.set_text('Идет передача комманд')
-    table.props(add='loading')
-    status.set_visibility(True)
-    await asyncio.gather(*tasks)
-    status.set_visibility(False)
-    table.props(remove='loading')
-    ui.notify(
-        message=f'Передано {len(commands)} команд на {len(ips)} устройств',
-        position='top',
-        type='positive'
-    )
-
-
 def change_page():
-    global rows, rows_count, pages_count, current_page
-    rows.clear()
-    devices = app.storage.general.get('db', [])
-    if rows_count > 0:
-        devices_count = get_devices_count()
-        pages_count = devices_count // rows_count
-        if devices_count % rows_count != 0:
-            pages_count += 1
-        if pages_count > 0:
-            if current_page == 0:
-                current_page = 1
-            elif current_page > pages_count:
-                current_page = pages_count
-            rows.extend(
-                devices[
-                    (current_page - 1) * rows_count
+    global rows_per_page, pages_count, current_page
+    devices_count = len(db_filtered)
+    if devices_count > 0:
+        if rows_per_page > 0:
+            pages_count = devices_count // rows_per_page
+            if devices_count % rows_per_page != 0:
+                pages_count += 1
+            if pages_count > 0:
+                if current_page == 0:
+                    current_page = 1
+                elif current_page > pages_count:
+                    current_page = pages_count
+            else:
+                pages_count = 0
+                current_page = 0
+            devices_table.update_rows(
+                db_filtered[
+                    (current_page - 1) * rows_per_page
                     :
-                    current_page * rows_count
+                    current_page * rows_per_page
                 ]
             )
         else:
-            current_page = 0
-        pages_label.set_text(f'{current_page} из {pages_count}')
-        table.update()
+            devices_table.update_rows(db_filtered)
+            pages_count = 1
+            current_page = 1
     else:
-        pages_count = 1
-        current_page = 1
-        rows.extend(devices)
+        pages_count = 0
+        current_page = 0
+    lbl_active_pages.set_text(f'{current_page} из {pages_count}')
 
 
 def goto_first_page():
@@ -400,32 +440,33 @@ def goto_last_page():
 
 
 if __name__ in {'__main__', '__mp_main__'}:
-    ui.run(title=APP_TITLE, port=8888, reconnect_timeout=60)
-    
+    ui.run(title=config.APP_TITLE, port=8888, reconnect_timeout=60)
+
     discover_tasks = []
     configure_tasks = []
     ids = {}
-    rows = []
-    categories = []
-    vendors = []
-    models = []
-    rows_count = app.storage.general.get('rows_per_page', ROWS_PER_PAGE)
+    db_full = []
+    db_filtered = []
+    rows_per_page = app.storage.general.get(
+        'rows_per_page',
+        config.ROWS_PER_PAGE
+    )
     # Если ранее сохранено количество строк на странице, а после
     # внесены изменения в конфиг и соответствующего значения
     # в нем нет, возникнет ошибка. В таком случае делаем
     # активным первый элемент списка и сохраняем изменения
-    if not rows_count in ROWS_COUNT_OPTIONS:
-        if ROWS_COUNT_OPTIONS:
-            rows_count = ROWS_COUNT_OPTIONS[0]
+    if not rows_per_page in config.ROWS_COUNT_OPTIONS:
+        if config.ROWS_COUNT_OPTIONS:
+            rows_per_page = config.ROWS_COUNT_OPTIONS[0]
         else:
-            rows_count = 0
+            rows_per_page = 0
     pages_count = 0
     current_page = 0
-    dark = ui.dark_mode()
-    dark.set_value(app.storage.general.get('dark_mode', False))
+    dark_mode = ui.dark_mode()
+    dark_mode.set_value(app.storage.general.get('dark_mode', False))
 
     try:
-        with open(SYS_OBJECT_IDS_DB) as file:
+        with open(config.SYS_OBJECT_IDS_DB) as file:
             ids = json.load(file)
     except:
         ui.notify(
@@ -437,7 +478,7 @@ if __name__ in {'__main__', '__mp_main__'}:
     # GUI RENDERING
     # Header section
     with ui.header().classes('items-center py-2'):
-        ui.label(APP_TITLE).classes('text-lg')
+        ui.label(config.APP_TITLE).classes('text-lg')
         ui.space()
         ui.separator().props('vertical color="blue-11"')
         with ui.button(
@@ -454,7 +495,7 @@ if __name__ in {'__main__', '__mp_main__'}:
             btn_prev_page.props('flat square')
             btn_prev_page.classes('text-white px-2')
             btn_prev_page.tooltip('Предыдущая страница')
-        pages_label = ui.label(f'0 из 0')
+        lbl_active_pages = ui.label(f'0 из 0')
         with ui.button(
             icon='chevron_right',
             on_click=goto_next_page
@@ -470,16 +511,16 @@ if __name__ in {'__main__', '__mp_main__'}:
             btn_last_page.classes('text-white px-2')
             btn_last_page.tooltip('Последняя страница')
         ui.separator().props('vertical color="blue-11"')
-        rows_count_dropdown = ui.select(
-            ROWS_COUNT_OPTIONS,
-            value=rows_count,
-            on_change=lambda: change_rows_count(rows_count_dropdown.value) 
+        rows_per_page_dropdown = ui.select(
+            config.ROWS_COUNT_OPTIONS,
+            value=rows_per_page,
+            on_change=lambda: set_rows_per_page(rows_per_page_dropdown.value) 
         ).props('dense dark borderless options-dark="false"')
         # Наличие значения 0 обязательно в списке так как именно оно
         # дает возможность вывода полного списка устройств
-        if not 0 in rows_count_dropdown.options:
-            rows_count_dropdown.options.insert(0, 0)
-        rows_count_dropdown.tooltip('Устройств на странице')
+        if not 0 in rows_per_page_dropdown.options:
+            rows_per_page_dropdown.options.insert(0, 0)
+        rows_per_page_dropdown.tooltip('Устройств на странице')
         ui.separator().props('vertical color="blue-11"')
         with ui.button(
             icon='delete_outline',
@@ -500,7 +541,7 @@ if __name__ in {'__main__', '__mp_main__'}:
             icon='tune',
             on_click=lambda: (
                 show_configure_dialog()
-                if len(table.selected) > 0
+                if len(devices_table.selected) > 0
                 else ui.notify(
                     message='Выберите устройства',
                     position='top',
@@ -521,7 +562,7 @@ if __name__ in {'__main__', '__mp_main__'}:
         ui.separator().props('vertical color="blue-11"')
         with ui.button(
             icon='dark_mode',
-            on_click=dark_mode
+            on_click=change_ui_mode
         ) as btn_mode:
             btn_mode.props('flat square')
             btn_mode.classes('text-white px-2')
@@ -530,67 +571,69 @@ if __name__ in {'__main__', '__mp_main__'}:
     with ui.right_drawer(
         fixed = True,
         value = True
-    ).props('bordered') as filter_drawer:
-        with ui.column().classes('w-full') as filters:
-            categories_list = ui.select(
-                categories,
-                on_change=apply_filter,
+    ).props('bordered') as filters_drawer:
+        with ui.column().classes('w-full') as filters_block:
+            lst_categories = ui.select(
+                [],
+                on_change=apply_filters,
                 label='Категория'
             ).classes('w-full').props('outlined dense square clearable')
-            vendors_list = ui.select(
-                vendors,
-                on_change=apply_filter,
+            lst_vendors = ui.select(
+                [],
+                on_change=apply_filters,
                 label='Производитель'
             ).classes('w-full').props('outlined dense square clearable')
-            models_list = ui.select(
-                models,
-                on_change=apply_filter,
+            lst_models = ui.select(
+                [],
+                on_change=apply_filters,
                 label='Модель'
             ).classes('w-full').props('outlined dense square clearable')
             telnet_switch = ui.switch(
                 'Включен протокол telnet',
                 value=True,
-                on_change=apply_filter
+                on_change=apply_filters
             ).classes('w-full pr-3 bg-gray-100')
             ssh_switch = ui.switch(
                 'Включен протокол ssh',
                 value=True,
-                on_change=apply_filter
+                on_change=apply_filters
             ).classes('w-full pr-3 bg-gray-100')
         ui.space()
         with ui.column().classes(
             'w-full items-center'
-        ) as status:
-            status.set_visibility(False)
+        ) as status_block:
+            status_block.set_visibility(False)
             status_spinner = ui.spinner(type='tail', size='64px')
-            status_label = ui.label().classes('text-center')
+            lbl_status = ui.label().classes('text-center')
         ui.space()
         ui.button(
             'Сбросить фильтр',
-            on_click=reset_filter
+            on_click=reset_filters
         ).classes('w-full').props('square unelevated')
     # Table section
     with ui.table(
-        rows=rows,
-        columns=COLUMNS_SETTINGS,
-        column_defaults=COLUMNS_DEFAULTS,
+        rows=[],
+        columns=config.COLUMNS_SETTINGS,
+        column_defaults=config.COLUMNS_DEFAULTS,
         row_key='host',
         selection='multiple',
-        on_select=lambda: total_selected.set_text(len(table.selected))
-    ) as table:
-        table.classes('shadow-none border rounded-none w-full')
-        table.props('dense hide-selected-banner hide-no-data')
-        table.add_slot('body-cell-snmp', '''
+        on_select=lambda: lbl_total_selected.set_text(len(
+            devices_table.selected
+        ))
+    ) as devices_table:
+        devices_table.classes('shadow-none border rounded-none w-full')
+        devices_table.props('dense hide-selected-banner hide-no-data')
+        devices_table.add_slot('body-cell-snmp', '''
             <q-td key="snmp" :props="props">
                 <q-badge rounded :color="props.value == 0 ? 'red' : 'green'" />
             </q-td>
         ''')
-        table.add_slot('body-cell-telnet', '''
+        devices_table.add_slot('body-cell-telnet', '''
             <q-td key="telnet" :props="props">
                 <q-badge rounded :color="props.value == 0 ? 'red' : 'green'" />
             </q-td>
         ''')
-        table.add_slot('body-cell-ssh', '''
+        devices_table.add_slot('body-cell-ssh', '''
             <q-td key="ssh" :props="props">
                 <q-badge rounded :color="props.value == 0 ? 'red' : 'green'" />
             </q-td>
@@ -598,25 +641,25 @@ if __name__ in {'__main__', '__mp_main__'}:
     # Footer section
     with ui.footer().classes('items-center py-2'):
         ui.label('Устройств:')
-        total_devices = ui.label('0')
+        lbl_total_devices = ui.label('0')
         ui.separator().props('vertical color="blue-11"')
         ui.label('Категорий:')
-        total_categories = ui.label('0')
+        lbl_total_categories = ui.label('0')
         ui.separator().props('vertical color="blue-11"')
         ui.label('Производителей:')
-        total_vendors = ui.label('0')
+        lbl_total_vendors = ui.label('0')
         ui.separator().props('vertical color="blue-11"')
         ui.label('Моделей:')
-        total_models = ui.label('0')
+        lbl_total_models = ui.label('0')
         ui.separator().props('vertical color="blue-11"')
         ui.label('Выбрано:')
-        total_selected = ui.label('0')
+        lbl_total_selected = ui.label('0')
         ui.separator().props('vertical color="blue-11"')
         ui.label('Фильтровано:')
-        total_filtered = ui.label('0')
-        
-    dark_mode(False)
+        lbl_total_filtered = ui.label('0')
+
+    set_ui_mode()
 
     for device in app.storage.general.get('db', []):
         add_device(device)
-    change_page()
+    apply_filters()
