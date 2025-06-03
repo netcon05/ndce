@@ -160,13 +160,13 @@ def apply_filters() -> None:
     devices_table.clear()
     devices_table.update_rows(db_filtered, clear_selection=True)
     lst_categories.set_options(
-        list(set(map(lambda row: row['category'], db_filtered)))
+        sorted(list(set(map(lambda row: row['category'], db_filtered))))
     )
     lst_vendors.set_options(
-        list(set(map(lambda row: row['vendor'], db_filtered)))
+        sorted(list(set(map(lambda row: row['vendor'], db_filtered))))
     )
     lst_models.set_options(
-        list(set(map(lambda row: row['model'], db_filtered)))
+        sorted(list(set(map(lambda row: row['model'], db_filtered))))
     )
     change_page()
     update_ui()
