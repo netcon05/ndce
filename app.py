@@ -13,7 +13,39 @@ from ndce.telnet import Telnet
 import config
 
 
+def set_ui_defaults() -> None:
+    """
+    Функция устанавливает значения по-умолчанию
+    для пользовательского интерфейса
+    """
+    ui.card.default_props('square')
+    ui.input.default_classes('w-full mt-10')
+    ui.input.default_props('square autofocus outlined clearable')
+    ui.switch.default_classes('w-full pr-3 bg-gray-100')
+    ui.row.default_classes('w-full justify-between')
+    ui.button.default_classes('text-white px-2')
+    ui.button.default_props('square unelevated')
+    ui.header.default_classes('items-center py-2')
+    ui.separator.default_props('vertical color="blue-11"')
+    ui.select.default_props('dense square')
+    ui.right_drawer.default_props('bordered')
+    ui.column.default_classes('w-full')
+    ui.table.default_classes('shadow-none border rounded-none w-full')
+    ui.table.default_props('dense hide-selected-banner hide-no-data')
+    ui.footer.default_classes('items-center py-2')
+    ui.textarea.default_classes('w-full mt-10')
+    ui.textarea.default_props(
+        '''
+        square autofocus standout autogrow
+        outlined input-class=max-h-64
+        '''
+    )
+
+
 def change_tooltip(element: ui.element, text: str) -> None:
+    """
+    Функция меняет текст всплывающей подсказки у заданного элемента
+    """
     for child in element:
         if isinstance(child, ui.tooltip):
             element.remove(child)
@@ -21,6 +53,9 @@ def change_tooltip(element: ui.element, text: str) -> None:
 
 
 def set_ui_mode() -> None:
+    """
+    Функция устанавливает режим интерфейса: темный или светлый
+    """
     if dark_mode.value:
         btn_mode.set_icon('light_mode')
         btn_mode.tooltip('Светлый')
@@ -48,6 +83,9 @@ def set_ui_mode() -> None:
 
 
 def change_ui_mode() -> None:
+    """
+    Функция меняет режим интерфейса: с темного на светлый и обратно
+    """
     if dark_mode.value:
         dark_mode.disable()
     else:
@@ -57,6 +95,9 @@ def change_ui_mode() -> None:
     
 
 def add_device(device: Dict[str, str]) -> None:
+    """
+    Функция добавляет заданное устройство
+    """
     db_full.append(device)
     devices_table.add_row(device)
     apply_filters()
@@ -64,6 +105,9 @@ def add_device(device: Dict[str, str]) -> None:
 
 
 def update_ui() -> None:
+    """
+    Функция обновляет пользовательский интерфейс
+    """
     lst_categories.update()
     lst_vendors.update()
     lst_models.update()
@@ -76,6 +120,9 @@ def update_ui() -> None:
 
 
 def clear_db() -> None:
+    """
+    Функция очищает базу данных
+    """
     app.storage.general.pop('db')
     db_full.clear()
     db_filtered.clear()
@@ -89,6 +136,9 @@ def clear_db() -> None:
 
 
 def delete_devices() -> None:
+    """
+    Функция удаляет устройства, выбранные в таблице
+    """
     global db_full
     if devices_table.selected:
         db_full = list(filter(
@@ -108,6 +158,9 @@ def delete_devices() -> None:
 
 
 def set_rows_per_page(value: int) -> None:
+    """
+    Функция устанавливаем и сохраняет значение количества строк на странице
+    """
     global rows_per_page
     app.storage.general['rows_per_page'] = value
     rows_per_page = value
@@ -117,6 +170,9 @@ def set_rows_per_page(value: int) -> None:
 
 
 def change_discover_button() -> None:
+    """
+    Функция меняет иконку и всплывающую подсказку для кнопки обнаружения
+    """
     if btn_discover.icon == 'search':
         btn_discover.set_icon('stop')
         change_tooltip(btn_discover, 'Остановить обнаружение')
@@ -126,6 +182,9 @@ def change_discover_button() -> None:
 
 
 def change_configure_button() -> None:
+    """
+    Функция меняет иконку и всплывающую подсказку для кнопки конфигурирования
+    """
     if btn_configure.icon == 'tune':
         btn_configure.set_icon('stop')
         change_tooltip(btn_configure, 'Остановить передачу команд')
@@ -135,6 +194,9 @@ def change_configure_button() -> None:
 
 
 def cancel_discover_tasks() -> None:
+    """
+    Функция отменяет задачи обнаружения устройств
+    """
     if discover_tasks:
         for task in discover_tasks:
             try:
@@ -145,6 +207,9 @@ def cancel_discover_tasks() -> None:
 
 
 def cancel_configure_tasks() -> None:
+    """
+    Функция отменяет задачи передачи команд устройствам
+    """
     if configure_tasks:
         for task in configure_tasks:
             try:
@@ -155,6 +220,9 @@ def cancel_configure_tasks() -> None:
 
 
 def apply_filters() -> None:
+    """
+    Функция применяет правила фильтрации
+    """
     global db_filtered
     db_filtered = list(filter(filter_devices, db_full))
     devices_table.clear()
@@ -173,7 +241,10 @@ def apply_filters() -> None:
     
 
 
-def filter_devices(device: Dict[str, str]) -> List[Dict[str, str]]:
+def filter_devices(device: Dict[str, str]) -> bool:
+    """
+    Функция определяет, соответствует ли устройство заданному фильтру
+    """
     result = True
     if lst_categories.value:
         result &= device['category'] == lst_categories.value
@@ -193,33 +264,44 @@ def filter_devices(device: Dict[str, str]) -> List[Dict[str, str]]:
 
 
 def reset_filters() -> None:
+    """
+    Функция сбрасывает все фильтры
+    """
     for filter in filters_block.descendants():
         filter.set_value('')
         filter.set_value(True)
 
 
+def save_clear_status(value: bool) -> None:
+    """
+    Функция сохраняет состояние кнопки очистки базы
+    """
+    app.storage.general['clear'] = value
+
+
 def show_discover_dialog() -> ui.dialog:
+    """
+    Функция отображает окно обнаружения устройств
+    """
+    ui.button.default_classes('w-24')
+    ui.label.default_classes(
+        '''
+        w-full bg-primary text-base text-center
+        text-white py-2 absolute left-0 top-0
+        '''
+    )
     if btn_discover.icon == 'search':
         with ui.dialog(
             value=True
-        ) as discover_dialog, ui.card().props('square'):
-            title = ui.label('Обнаружение устройств')
-            title.classes(
-                '''
-                w-full bg-primary text-base text-center
-                text-white py-2 absolute left-0 top-0
-                '''
-            )
-            subnet = ui.input(
-                label='Подсеть'
-            ).classes('w-full mt-10').props(
-                'square autofocus outlined clearable'
-            )
+        ) as discover_dialog, ui.card():
+            ui.label('Обнаружение устройств')
+            subnet = ui.input(label='Подсеть')
             clear_db_switch = ui.switch(
                 'Очистить базу данных',
-                value=True
-            ).classes('w-full pr-3 bg-gray-100')
-            with ui.row().classes('w-full justify-between'):
+                value=app.storage.general.get('clear', False),
+                on_change=lambda: save_clear_status(clear_db_switch.value)
+            )
+            with ui.row():
                 ui.button(
                     'Начать',
                     on_click=lambda: get_subnet(
@@ -227,11 +309,11 @@ def show_discover_dialog() -> ui.dialog:
                         subnet.value,
                         clear_db_switch.value
                     )
-                ).classes('w-24').props('square unelevated')
+                )
                 ui.button(
                     'Отмена',
                     on_click=discover_dialog.close
-                ).classes('w-24').props('square unelevated')
+                )
             if dark_mode.value:
                 clear_db_switch.classes(remove='bg-gray-100')
     else:
@@ -248,6 +330,9 @@ def show_discover_dialog() -> ui.dialog:
 
 
 async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
+    """
+    Функция запускает процесс обнаружения устройств
+    """
     global discover_tasks
     if is_ip_subnet(subnet):
         change_discover_button()
@@ -283,6 +368,9 @@ async def get_subnet(dialog: ui.dialog, subnet: str, clear: bool) -> None:
 
 
 async def discover_device(host: str, semaphore: asyncio.Semaphore) -> None:
+    """
+    Функция получает данные по заданному устройству
+    """
     device = await get_device_info(host, semaphore, ids)
     if device:
         # IP адрес - уникальный идентификатор устройства в базе
@@ -307,36 +395,36 @@ async def discover_device(host: str, semaphore: asyncio.Semaphore) -> None:
 
 
 def show_configure_dialog() -> ui.dialog:
+    """
+    Функция отображает окно передачи команд устройствам
+    """
+    ui.button.default_classes('w-24')
+    ui.label.default_classes(
+        '''
+        w-full bg-primary text-base text-center
+        text-white py-2 absolute left-0 top-0
+        '''
+    )
+    ui.card.default_classes('w-full max-h-96')
     if btn_configure.icon == 'tune':
         with ui.dialog(value=True)as configure_dialog:
-            with ui.card().classes('w-full max-h-96').props('square'):
-                title = ui.label('Конфигурирование устройств')
-                title.classes(
-                    '''
-                    w-full bg-primary text-base text-center
-                    text-white py-2 absolute left-0 top-0
-                    '''
-                )
+            with ui.card():
+                ui.label('Конфигурирование устройств')
                 commands = ui.textarea(
                     label='Список команд',
                     placeholder='Вводите по одной команде на строку'
-                ).classes('w-full mt-10').props(
-                    '''
-                    square autofocus standout autogrow
-                    outlined input-class=max-h-64
-                    '''
                 )
-                with ui.row().classes('w-full justify-between'):
+                with ui.row():
                     ui.button(
                         'Начать',
                         on_click=lambda: send_commands(
                             configure_dialog, commands.value
                         )
-                    ).classes('w-24').props('square unelevated')
+                    )
                     ui.button(
                         'Отмена',
                         on_click=configure_dialog.close
-                    ).classes('w-24').props('square unelevated')
+                    )
     else:
         cancel_configure_tasks()
         devices_table.props(remove='loading')
@@ -352,6 +440,9 @@ def show_configure_dialog() -> ui.dialog:
 
 
 async def send_commands(dialog: ui.dialog, commands: str) -> None:
+    """
+    Функция передает заданные команды выбранным устройствам
+    """
     global configure_tasks
     if commands:
         dialog.close()
@@ -380,7 +471,10 @@ async def send_commands(dialog: ui.dialog, commands: str) -> None:
         )
 
 
-def change_page():
+def change_page() -> None:
+    """
+    Функция осуществляет переход к странице
+    """
     global rows_per_page, pages_count, current_page
     devices_count = len(db_filtered)
     if devices_count > 0:
@@ -413,27 +507,39 @@ def change_page():
     lbl_active_pages.set_text(f'{current_page} из {pages_count}')
 
 
-def goto_first_page():
+def goto_first_page() -> None:
+    """
+    Функция осуществляет переход к первой странице
+    """
     global current_page
     current_page = 1
     change_page()
 
 
-def goto_previous_page():
+def goto_previous_page() -> None:
+    """
+    Функция осуществляет переход к предыдущей странице
+    """
     global current_page
     if current_page > 1:
         current_page -= 1
         change_page()
 
 
-def goto_next_page():
+def goto_next_page() -> None:
+    """
+    Функция осуществляет переход к следующей странице
+    """
     global current_page
     if current_page < pages_count:
         current_page += 1
         change_page()
 
 
-def goto_last_page():
+def goto_last_page() -> None:
+    """
+    Функция осуществляет переход к последней странице
+    """
     global current_page
     current_page = pages_count
     change_page()
@@ -447,6 +553,7 @@ if __name__ in {'__main__', '__mp_main__'}:
     ids = {}
     db_full = []
     db_filtered = []
+    
     rows_per_page = app.storage.general.get(
         'rows_per_page',
         config.ROWS_PER_PAGE
@@ -462,6 +569,7 @@ if __name__ in {'__main__', '__mp_main__'}:
             rows_per_page = 0
     pages_count = 0
     current_page = 0
+    
     dark_mode = ui.dark_mode()
     dark_mode.set_value(app.storage.general.get('dark_mode', False))
 
@@ -474,70 +582,53 @@ if __name__ in {'__main__', '__mp_main__'}:
             position='top',
             type='warning'
         )
+    
+    set_ui_defaults()
 
     # GUI RENDERING
     # Header section
-    with ui.header().classes('items-center py-2'):
+    with ui.header():
         ui.label(config.APP_TITLE).classes('text-lg')
         ui.space()
-        ui.separator().props('vertical color="blue-11"')
-        with ui.button(
+        ui.separator()
+        ui.button(
             icon='first_page',
             on_click=goto_first_page
-        ) as btn_first_page:
-            btn_first_page.props('flat square')
-            btn_first_page.classes('text-white px-2')
-            btn_first_page.tooltip('Первая страница')
-        with ui.button(
+        ).tooltip('Первая страница')
+        ui.button(
             icon='chevron_left',
             on_click=goto_previous_page
-        ) as btn_prev_page:
-            btn_prev_page.props('flat square')
-            btn_prev_page.classes('text-white px-2')
-            btn_prev_page.tooltip('Предыдущая страница')
+        ).tooltip('Предыдущая страница')
         lbl_active_pages = ui.label(f'0 из 0')
-        with ui.button(
+        ui.button(
             icon='chevron_right',
             on_click=goto_next_page
-        ) as btn_next_page:
-            btn_next_page.props('flat square')
-            btn_next_page.classes('text-white px-2')
-            btn_next_page.tooltip('Следующая страница')
-        with ui.button(
+        ).tooltip('Следующая страница')
+        ui.button(
             icon='last_page',
             on_click=goto_last_page
-        ) as btn_last_page:
-            btn_last_page.props('flat square')
-            btn_last_page.classes('text-white px-2')
-            btn_last_page.tooltip('Последняя страница')
-        ui.separator().props('vertical color="blue-11"')
+        ).tooltip('Последняя страница')
+        ui.separator()
         rows_per_page_dropdown = ui.select(
             config.ROWS_COUNT_OPTIONS,
             value=rows_per_page,
             on_change=lambda: set_rows_per_page(rows_per_page_dropdown.value) 
-        ).props('dense dark borderless options-dark="false"')
+        ).props(
+            add='dark borderless options-dark="false"',
+            remove='outlined'
+        ).tooltip('Устройств на странице')
         # Наличие значения 0 обязательно в списке так как именно оно
         # дает возможность вывода полного списка устройств
         if not 0 in rows_per_page_dropdown.options:
             rows_per_page_dropdown.options.insert(0, 0)
-        rows_per_page_dropdown.tooltip('Устройств на странице')
-        ui.separator().props('vertical color="blue-11"')
-        with ui.button(
+        ui.separator()
+        ui.button(
             icon='delete_outline',
             on_click=delete_devices
-        ) as btn_delete_rows:
-            btn_delete_rows.props('flat square')
-            btn_delete_rows.classes('text-white px-2')
-            btn_delete_rows.tooltip('Удаление устройств')
-        with ui.button(
-            icon='clear',
-            on_click=clear_db
-        ) as btn_clear_db:
-            btn_clear_db.props('flat square')
-            btn_clear_db.classes('text-white px-2')
-            btn_clear_db.tooltip('Очистка БД')
-        ui.separator().props('vertical color="blue-11"')
-        with ui.button(
+        ).tooltip('Удаление устройств')
+        ui.button(icon='clear', on_click=clear_db).tooltip('Очистка БД')
+        ui.separator()
+        btn_configure = ui.button(
             icon='tune',
             on_click=lambda: (
                 show_configure_dialog()
@@ -548,68 +639,55 @@ if __name__ in {'__main__', '__mp_main__'}:
                     type='warning'
                 )
             )
-        ) as btn_configure:
-            btn_configure.props('flat square')
-            btn_configure.classes('text-white px-2')
-            btn_configure.tooltip('Конфигурирование')
-        with ui.button(
+        ).tooltip('Конфигурирование')
+        btn_discover = ui.button(
             icon='search',
             on_click=show_discover_dialog
-        ) as btn_discover:
-            btn_discover.props('flat square')
-            btn_discover.classes('text-white px-2')
-            btn_discover.tooltip('Начать обнаружение')
-        ui.separator().props('vertical color="blue-11"')
-        with ui.button(
+        ).tooltip('Начать обнаружение')
+        ui.separator()
+        btn_mode = ui.button(
             icon='dark_mode',
             on_click=change_ui_mode
-        ) as btn_mode:
-            btn_mode.props('flat square')
-            btn_mode.classes('text-white px-2')
-            btn_mode.tooltip('Темный')
+        ).tooltip('Темный')
     # Right drawer section
-    with ui.right_drawer(
-        fixed = True,
-        value = True
-    ).props('bordered') as filters_drawer:
-        with ui.column().classes('w-full') as filters_block:
+    with ui.right_drawer(fixed = True, value = True) as filters_drawer:
+        ui.column.default_classes('items-center')
+        ui.button.default_classes('w-full')
+        ui.label.default_classes('text-center')
+        ui.select.default_classes('w-full')
+        with ui.column()as filters_block:
             lst_categories = ui.select(
                 [],
                 on_change=apply_filters,
                 label='Категория'
-            ).classes('w-full').props('outlined dense square clearable')
+            ).props('clearable')
             lst_vendors = ui.select(
                 [],
                 on_change=apply_filters,
                 label='Производитель'
-            ).classes('w-full').props('outlined dense square clearable')
+            ).props('clearable')
             lst_models = ui.select(
                 [],
                 on_change=apply_filters,
                 label='Модель'
-            ).classes('w-full').props('outlined dense square clearable')
+            ).props('clearable')
             telnet_switch = ui.switch(
                 'Включен протокол telnet',
                 value=True,
                 on_change=apply_filters
-            ).classes('w-full pr-3 bg-gray-100')
+            )
             ssh_switch = ui.switch(
                 'Включен протокол ssh',
                 value=True,
                 on_change=apply_filters
-            ).classes('w-full pr-3 bg-gray-100')
+            )
         ui.space()
-        with ui.column().classes(
-            'w-full items-center'
-        ) as status_block:
+        with ui.column() as status_block:
             status_block.set_visibility(False)
             status_spinner = ui.spinner(type='tail', size='64px')
-            lbl_status = ui.label().classes('text-center')
+            lbl_status = ui.label()
         ui.space()
-        ui.button(
-            'Сбросить фильтр',
-            on_click=reset_filters
-        ).classes('w-full').props('square unelevated')
+        ui.button('Сбросить фильтр', on_click=reset_filters)
     # Table section
     with ui.table(
         rows=[],
@@ -617,12 +695,10 @@ if __name__ in {'__main__', '__mp_main__'}:
         column_defaults=config.COLUMNS_DEFAULTS,
         row_key='host',
         selection='multiple',
-        on_select=lambda: lbl_total_selected.set_text(len(
-            devices_table.selected
-        ))
+        on_select=lambda: lbl_total_selected.set_text(
+            len(devices_table.selected)
+        )
     ) as devices_table:
-        devices_table.classes('shadow-none border rounded-none w-full')
-        devices_table.props('dense hide-selected-banner hide-no-data')
         devices_table.add_slot('body-cell-snmp', '''
             <q-td key="snmp" :props="props">
                 <q-badge rounded :color="props.value == 0 ? 'red' : 'green'" />
@@ -639,27 +715,28 @@ if __name__ in {'__main__', '__mp_main__'}:
             </q-td>
         ''')
     # Footer section
-    with ui.footer().classes('items-center py-2'):
+    with ui.footer():
         ui.label('Устройств:')
         lbl_total_devices = ui.label('0')
-        ui.separator().props('vertical color="blue-11"')
+        ui.separator()
         ui.label('Категорий:')
         lbl_total_categories = ui.label('0')
-        ui.separator().props('vertical color="blue-11"')
+        ui.separator()
         ui.label('Производителей:')
         lbl_total_vendors = ui.label('0')
-        ui.separator().props('vertical color="blue-11"')
+        ui.separator()
         ui.label('Моделей:')
         lbl_total_models = ui.label('0')
-        ui.separator().props('vertical color="blue-11"')
+        ui.separator()
         ui.label('Выбрано:')
         lbl_total_selected = ui.label('0')
-        ui.separator().props('vertical color="blue-11"')
+        ui.separator()
         ui.label('Фильтровано:')
         lbl_total_filtered = ui.label('0')
-
+    
     set_ui_mode()
-
+    
     for device in app.storage.general.get('db', []):
         add_device(device)
+
     apply_filters()
